@@ -122,8 +122,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final String[] STATUS_SYMBOLS = {"wifi", "ethernet", "bluetooth", "usb"};
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
     // Two rows: smaller tiles, so the taller glass stays clear of the weather and quotes lines above it.
-    private static final float L_TILE_H2 = 84, ROW_GAP = 24;
-    private static final float L_DATE_BASE = 330, L_CLOCK_BASE = 540, L_WEATHER_BASE = 626, L_QUOTES_BASE = 694;
+    private static final float L_TILE_H2 = 130, ROW_GAP = 24;
+    private static final float L_DATE_BASE = 336, L_CLOCK_BASE = 468, L_WEATHER_BASE = 540, L_QUOTES_BASE = 598;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
     private static String[] tabs;
     private static int tabsGeneration = -1;
@@ -132,9 +132,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private final Activity activity;
     private final Scene scene = new Scene();
-    private final Galaxy galaxy = new Galaxy();
-    private boolean galaxyTheme;          // Home Settings > Theme > Galaxy (and AGSL to draw it)
-    private String greetingText = "";
+    private final Possessed possessed = new Possessed();   // Roast Mode: the TV types to you
+    private Possessed.Wrapped typedLines;
     private int shelfCols;                // apps per row with the shelf in two rows; 0 = one row
     private final HomeData data;
     private final Recs recs;
@@ -689,7 +688,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void resume() {
         if (running) return;
         running = true;
-        galaxyTheme = galaxy.ready() && Prefs.theme().equals("galaxy");
+        possessed.start(getContext(), this::typed);
         checkNight(false);
         boolean h24 = Ui.h24();
         if (h24 != clock24) {   // 12/24 hours changed (the TV's or the Clock row's): the clock and the drawer's times again
@@ -743,6 +742,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void pause() {
         if (!running) return;
         running = false;
+        possessed.stop();
         handler.removeCallbacks(bgFollow);
         cancelReorder(true);
         if (recents != null) recents.closeNow();
@@ -856,8 +856,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         measure(status, statusWide ? width : Math.round(1160 * kk), Math.round(240 * kk));
         // Sized to what they draw (the glass and its shadow; the grown tiles and their shadows): smaller layers are
         // cheaper for the GPU to composite on every frame of the drawer animation.
-        measure(platter, width, Math.round(320 * kk));
-        measure(tiles, width, Math.round(270 * kk));
+        // Tall enough for the two-row shelf (its glass starts near 656 with the large tiles).
+        measure(platter, width, Math.round(480 * kk));
+        measure(tiles, width, Math.round(460 * kk));
         measure(drawerLayer, width, Math.round(600 * kk));
         measure(sheetLayer, width, height);
         measure(menuLayer, width, height);
@@ -876,8 +877,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         sky.layout(0, 0, width, height);
         place(heroLayer, 0, 0);
         place(status, statusWide ? 0 : width - status.getMeasuredWidth(), 0);
-        place(platter, 0, Math.round(750 * kk));
-        place(tiles, 0, Math.round(790 * kk));
+        place(platter, 0, Math.round(590 * kk));
+        place(tiles, 0, Math.round(600 * kk));
         place(drawerLayer, 0, Math.round(470 * kk));
         sheetLayer.layout(0, 0, width, height);
         menuLayer.layout(0, 0, width, height);
@@ -897,7 +898,6 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         k = w / 1920f;
         screen.set(0, 0, w, h);
         scene.setSize(w, h);
-        galaxy.setSize(w, h);
         watchArt.setScale(k);
         makePaints();
         gridLabels = null;
@@ -939,8 +939,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lTip = Ui.text(Ui.semibold, 25 * k, L_INK);
         lTip.setTextAlign(Paint.Align.CENTER);
         lDate = Ui.text(Ui.semibold, 34 * k, L_DIM);
-        lGreet = Ui.text(Ui.semibold, 40 * k, L_INK);
-        lClock = Ui.numbers(Ui.light, 200 * k, L_INK);
+        lGreet = Ui.text(Ui.medium, 38 * k, L_INK);
+        lGreet.setTypeface(android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD));
+        lGreet.setShadowLayer(10 * k, 0, 2 * k, 0xCC000000);
+        lClock = Ui.numbers(Ui.light, 124 * k, L_INK);
         lClock.setLetterSpacing(-0.01f);
         lWeather = Ui.text(Ui.medium, 34 * k, L_DIM);
         lClockQuote = Ui.numbers(Ui.medium, 28 * k, L_DIM);
@@ -1071,11 +1073,6 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean busy = tilesMoving || statusMoving || heroMoving || drawerItemsMoving || gridMoving || drawerMoving
                 || menuMoving || sheetMoving || toastFading || heroFading || bgFading || nightMoving || tintMoving || sheetOpen
                 || sheet.value > 0.001f || recentMoving || drawerOpen || drawer.value > 0.001f || toast != null || !toasts.isEmpty();
-        // Galaxy: the sky moves on its own while it shows (Galaxy.due paces it), and holds still while anything else
-        // moves, so a redraw of it (~20 ms of GPU on an onn 4K stick) never lands in the middle of a focus animation.
-        boolean galaxyMoving = galaxyTheme && bgTo == null && !continueMode() && !underHidden;
-        if (galaxyMoving && !busy && galaxy.due(up)) sky.invalidate();
-        busy |= galaxyMoving;
         idle = !busy;
         if (busy) Choreographer.getInstance().postFrameCallback(this);
         else Choreographer.getInstance().postFrameCallbackDelayed(this, 1000);
@@ -1182,7 +1179,6 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         clockMinute = minute;
         clockText = Ui.clock(now);
         dateText = Ui.date(now);
-        greetingText = Greetings.pick(getContext(), now);
         return true;
     }
 
@@ -1426,7 +1422,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lQuote.setColor(tone(L_FAINT, 0xB8FFFFFF));
         lTip.setColor(tone(L_INK, WHITE));
         lDate.setColor(tone(L_DIM, 0xFF98989D));
-        lGreet.setColor(tone(0xFFD70015, 0xFFFF6961));
+        lGreet.setColor(tone(0xFF0A7A3A, 0xFF5CFF9D));
         lClock.setColor(tone(L_INK, WHITE));
         lWeather.setColor(tone(L_DIM, 0xFF98989D));
         lClockQuote.setColor(tone(L_DIM, 0xFF98989D));
@@ -4640,15 +4636,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean fading = bgFadeAt != 0;
         // Drawer open: the background lightens (by day) or darkens (at night), as a filter on the drawing itself.
         android.graphics.ColorFilter v = veil(tone(0.32f, 0.42f) * Ui.clamp(drawer.value), blend(0xFFFFFFFF, 0xFF000000, night));
-        if ((bgTo == null || (fading && bgFrom == null)) && galaxyTheme && !continueMode()) {
-            galaxy.draw(c, up);
-            float va = tone(0.32f, 0.42f) * Ui.clamp(drawer.value);   // the drawer's veil, darkening it
-            if (va > 0.002f) {
-                fill.setShader(null);
-                fill.setColor(Ui.alpha(0xFF000000, va));
-                c.drawRect(screen, fill);
-            }
-        } else if (bgTo == null || (fading && bgFrom == null)) {
+        if (bgTo == null || (fading && bgFrom == null)) {
             if (lightGradient == null) lightGradient = Ui.gradient(h, 0xFFF5F5F7, 0xFFE2E2E7);
             if (nightGradient == null) nightGradient = Ui.gradient(h, 0xFF1C1C1E, 0xFF0B0B0D);
             fill.setColorFilter(v);
@@ -4790,9 +4778,35 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return Recs.hasKey(getContext());
     }
 
+    /** The next character typed (or erased, or the cursor blinked): only the top layer draws again. */
+    private void typed() {
+        if (running) heroLayer.invalidate();
+    }
+
+    /** Roast Mode's typed message, above the date: up to three lines, with a blinking block cursor. */
+    private void drawTyped(Canvas c, float x) {
+        String text = possessed.text();
+        if (text.isEmpty()) return;
+        if (typedLines == null || !typedLines.text.equals(text) || typedLines.paint != lGreet) {
+            typedLines = Possessed.wrap(text, lGreet, 1150 * k, 3);
+        }
+        int left = possessed.shown();
+        float lineH = 52 * k, base = (L_DATE_BASE - 74) * k - (typedLines.lines.length - 1) * lineH;
+        for (int i = 0; i < typedLines.lines.length; i++) {
+            String line = typedLines.lines[i];
+            int n = Math.min(left, line.length());
+            boolean last = left <= line.length() || i == typedLines.lines.length - 1;
+            String part = line.substring(0, Math.max(0, n));
+            if (last && possessed.cursor()) part += "\u2588";
+            if (!part.isEmpty()) c.drawText(part, x - Ui.leftBearing(lGreet, part), base + i * lineH, lGreet);
+            left -= line.length() + 1;   // the space the wrap took out
+            if (last) break;
+        }
+    }
+
     private void drawClock(Canvas c) {
         float x = MARGIN * k;
-        if (!greetingText.isEmpty()) c.drawText(greetingText, x - Ui.leftBearing(lGreet, greetingText), (L_DATE_BASE - 64) * k, lGreet);
+        drawTyped(c, x);
         c.drawText(dateText, x - Ui.leftBearing(lDate, dateText), L_DATE_BASE * k, lDate);
         c.drawText(clockText, x - Ui.leftBearing(lClock, clockText), L_CLOCK_BASE * k, lClock);
         HomeData.Weather wx = data.weather;

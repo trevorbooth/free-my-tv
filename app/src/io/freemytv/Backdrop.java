@@ -69,6 +69,50 @@ final class Backdrop {
         nightImage = nightBg == null ? null : Bitmap.createBitmap(nightBg, bw, bh, Bitmap.Config.ARGB_8888);
     }
 
+    /** Your photo: the background at full size, already scrimmed for day and for night. */
+    private Backdrop(int[] frost, Bitmap wide, int[] light, int[] lightGlass, int[] night, int[] nightGlass,
+                     Bitmap lightImage, Bitmap nightImage) {
+        this.image = null;
+        this.frost = frost;
+        this.glass = null;
+        this.wide = wide;
+        wideShader = wide == null ? null : new BitmapShader(wide, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        this.light = light;
+        this.lightGlass = lightGlass;
+        this.nightFrost = night;
+        this.nightGlass = nightGlass;
+        this.lightImage = lightImage;
+        this.nightImage = nightImage;
+    }
+
+    /**
+     * Your photo at the screen's full size, sharp: only a soft fade toward white (by day) or black (at night) behind
+     * the text on the left and the shelf at the bottom, so the rest of the photo stays as it is. Kept in GPU memory.
+     */
+    private static Bitmap scrimmed(Bitmap out, boolean light) {
+        Bitmap b = out.copy(Bitmap.Config.ARGB_8888, true);
+        Canvas c = new Canvas(b);
+        int tint = light ? 0xFFFFFF : 0x000000;
+        Paint p = new Paint(Paint.DITHER_FLAG);
+        p.setShader(new LinearGradient(0, 0, W * 0.62f, 0,
+                new int[] {veil(tint, light ? 0.7f : 0.66f), veil(tint, light ? 0.5f : 0.42f), veil(tint, 0)},
+                new float[] {0, 0.55f, 1}, Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H, p);
+        p.setShader(new LinearGradient(0, H, 0, H * 0.45f, veil(tint, light ? 0.45f : 0.55f), veil(tint, 0),
+                Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H, p);
+        p.setShader(new LinearGradient(0, 0, 0, H * 0.18f, veil(tint, 0.25f), veil(tint, 0), Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H, p);
+        Bitmap gpu = b.copy(Bitmap.Config.HARDWARE, false);
+        if (gpu == null) return b;
+        b.recycle();
+        return gpu;
+    }
+
+    private static int veil(int rgb, float a) {
+        return (Math.round(a * 255) << 24) | rgb;
+    }
+
     static Backdrop make(Bitmap src, boolean forLight) {
         return make(src, forLight, false);
     }
@@ -102,10 +146,10 @@ final class Backdrop {
             int[] night = darken(frost.clone(), 0.76f);
             int[] nightGlass = darken(glass, 0.56f);
             if (own) {
-                int[] sharp = reduce(out, GW, GH, 1, 1);
-                int[] lightBg = ramp(sharp.clone(), 0.82f, 0.45f, true), nightBg = ramp(sharp, 0.76f, 0.5f, false);
+                // Your photo stays sharp at full size (it used to be a 480×270 copy, scaled up and washed out).
+                Bitmap lightBg = scrimmed(out, true), nightBg = scrimmed(out, false);
                 out.recycle();
-                return new Backdrop(null, frost, null, wide, light, lightGlass, night, nightGlass, lightBg, nightBg, GW, GH);
+                return new Backdrop(frost, wide, light, lightGlass, night, nightGlass, lightBg, nightBg);
             }
             out.recycle();
             return new Backdrop(null, frost, null, wide, light, lightGlass, night, nightGlass);
@@ -253,19 +297,6 @@ final class Backdrop {
             int g = Math.round(((p >> 8) & 255) * keep + base);
             int b = Math.round((p & 255) * keep + base + 2 * amount);
             px[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
-        }
-        return px;
-    }
-
-    /** Whitens (or darkens) by `left` up to 45% of the width, easing to `right` by 70% (a GW × GH image). */
-    private static int[] ramp(int[] px, float left, float right, boolean light) {
-        int[] col = new int[GH];
-        for (int x = 0; x < GW; x++) {
-            float t = Math.max(0, Math.min(1, (x / (float) GW - 0.45f) / 0.25f));
-            float a = left + (right - left) * t * t * (3 - 2 * t);
-            for (int y = 0; y < GH; y++) col[y] = px[y * GW + x];
-            if (light) whiten(col, a); else darken(col, a);
-            for (int y = 0; y < GH; y++) px[y * GW + x] = col[y];
         }
         return px;
     }

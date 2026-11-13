@@ -132,6 +132,8 @@ final class Photos {
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static File built, building;
     private static Backdrop backdrop;
+    /** How often the home screen's background moves on to the next photo (the home screen checks every 15 s). */
+    private static final long ROTATE_MS = 2 * 60_000L;
 
     /**
      * This hour's photo, ready to draw as the home screen's background, or null (off, or the first one still being
@@ -144,7 +146,7 @@ final class Photos {
             return null;
         }
         List<File> list = files(c);
-        File want = list.get((int) ((System.currentTimeMillis() / 3_600_000L) % list.size()));
+        File want = list.get((int) ((System.currentTimeMillis() / ROTATE_MS) % list.size()));
         if (!want.equals(built) && !want.equals(building)) {
             building = want;
             worker.execute(() -> {
