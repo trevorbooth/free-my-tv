@@ -136,6 +136,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Scene scene = new Scene();
     private final Possessed possessed = new Possessed();   // Roast Mode: the TV types to you
     private Possessed.Wrapped typedLines;
+    private Paint typedLabel;
     private int shelfCols;                // apps per row with the shelf in two rows; 0 = one row
     private final HomeData data;
     private final Recs recs;
@@ -4836,6 +4837,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             typedLines = Possessed.wrap(text, lGreet, 1150 * k, 3);
         }
         float lineH = 52 * k, base = (L_DATE_BASE - 74) * k - (typedLines.lines.length - 1) * lineH;
+        if (typedLabel == null || typedLabel.getTextSize() != 22 * k) {
+            typedLabel = Ui.text(Ui.semibold, 22 * k, 0xFFFFFFFF);
+            typedLabel.setLetterSpacing(0.14f);
+            typedLabel.setShadowLayer(8 * k, 0, 2 * k, 0xCC000000);
+        }
+        typedLabel.setColor(Ui.alpha(lGreet.getColor(), 0.7f));
+        c.drawText(Possessed.LABEL, x - Ui.leftBearing(typedLabel, Possessed.LABEL), base - 50 * k, typedLabel);
         Possessed.draw(c, typedLines, possessed.shown(), possessed.cursor(), x, base, lineH);
     }
 

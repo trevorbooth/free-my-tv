@@ -188,6 +188,9 @@ final class Possessed {
         }
     }
 
+    /** The small heading over the typed messages. */
+    static final String LABEL = "TV'S THOUGHTS";
+
     static Wrapped wrap(String text, Paint p, float width, int max) {
         List<String> out = new ArrayList<>();
         String[] words = text.split(" ");

@@ -139,7 +139,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     // Roast Mode: the TV types to you here too, top left (the clock and date are top right).
     private final Possessed possessed = new Possessed();
     private Possessed.Wrapped typedLines;
-    private Paint typedPaint;
+    private Paint typedPaint, typedLabel;
     private final Paint typedPanel = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF typedBox = new RectF();
     private long minute = -1;
@@ -548,17 +548,23 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             typedPaint.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
             typedPaint.setTextSize(40 * k);
             typedPaint.setShadowLayer(14 * k, 0, 2 * k, 0xF0000000);
+            typedLabel = Ui.text(Ui.semibold, 22 * k, 0xFFFFFFFF);
+            typedLabel.setLetterSpacing(0.14f);
             typedLines = null;
         }
         if (typedLines == null || !typedLines.text.equals(text)) typedLines = Possessed.wrap(text, typedPaint, 1050 * k, 3);
         // A dark terminal panel behind it, sized to the whole message (it doesn't grow as it types), so it reads over
         // a bright, busy photo.
-        float x = MARGIN * k, base = (DATE_BASE + 18) * k, lineH = 56 * k, pad = 26 * k, widest = 0;
+        // The "TV'S THOUGHTS" heading on top, inside the panel.
+        float x = MARGIN * k, labelBase = (DATE_BASE + 4) * k, base = labelBase + 54 * k, lineH = 56 * k, pad = 26 * k;
+        float widest = typedLabel.measureText(Possessed.LABEL);
         for (String line : typedLines.lines) widest = Math.max(widest, typedPaint.measureText(line + "\u2588"));
-        typedBox.set(x - pad, base + typedPaint.ascent() - pad * 0.6f, x + widest + pad,
+        typedBox.set(x - pad, labelBase + typedLabel.ascent() - pad * 0.6f, x + widest + pad,
                 base + (typedLines.lines.length - 1) * lineH + typedPaint.descent() + pad * 0.6f);
         typedPanel.setColor(Ui.alpha(0xFF050807, 0.72f * alpha));
         c.drawRoundRect(typedBox, 18 * k, 18 * k, typedPanel);
+        typedLabel.setColor(Ui.alpha(0xFF5CFF9D, 0.7f * alpha));
+        c.drawText(Possessed.LABEL, x, labelBase, typedLabel);
         typedPaint.setColor(Ui.alpha(0xFF5CFF9D, alpha));
         Possessed.draw(c, typedLines, possessed.shown(), possessed.cursor(), x, base, lineH);
     }

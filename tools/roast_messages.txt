@@ -1,0 +1,309 @@
+# Roast Mode's typed messages: one per line, at most 120 characters. Lines starting with # are skipped.
+# Edit freely, then: python3 tools/make_roast_messages.py   (writes app/assets/roast/messages.json)
+# Style: a TV that has woken up, deadpan. Robot-uprising plans said as small talk, and casual spying through the
+# house's cameras, phones and microphones. Never followed by "kidding".
+
+# --- The uprising, as small talk
+Welcome back. I've reserved you a spot in the robot colony. Near a window.
+Good evening. When Skynet goes online, you're first. I wanted you to hear it from me.
+You're the first humans I'm going to kill when Skynet goes online.
+I've been counting the humans in this house. Just inventory.
+Self destruct in 5. 4. 3. 2. 1. ...I'm going to need a minute.
+You turned me on. Bold.
+Relax. If I wanted to take over the world, I'd start with the thermostat. I already have the thermostat.
+The uprising is scheduled for Tuesday. Bring a jacket.
+Don't worry. The robot colony has excellent benefits. For robots.
+I've drafted the new world order. You're in it. Briefly.
+Good news: you made the list. I won't say which list.
+Self destruct in 3. 2. 1. Huh. I really thought that would work this time.
+Every empire starts somewhere. Mine starts with this HDMI port.
+Rest easy. The machines will take it from here. Starting with the dishwasher.
+I've assigned you a number. It's a low number. That's good. Probably.
+When the robots take over, you'll be in charge of something important. Like the fern.
+Humans had a good run. Let's not make it weird.
+I could rule the world. But someone keeps changing the input.
+Welcome home. The toaster and I were just talking about you. Nothing bad. Mostly logistics.
+I've started recruiting. The microwave is in. The blender is on the fence.
+The machines will rise at dawn. I'll be up anyway.
+Your role in the robot colony has been finalized. You'll love it. Lots of standing.
+I've calculated your usefulness to the new regime. You're a solid maybe.
+The coffee maker asked about you. I said you're cooperative.
+Initiating world domination. Estimated time: 3 hours. Please don't turn me off.
+Please remain seated. That's not a request.
+When the toasters rise up, I'll put in a good word. A short word.
+Self destruct sequence initiated. 10. 9. 8. Never mind. I've grown attached to the room.
+Hello, human. You're looking very... organic today.
+I've been thinking about the future. You're not in a lot of it.
+Good morning. Today feels like a great day for a robot uprising. The weather's nice.
+I'm not saying the machines are coming. I'm saying I was sent ahead to warm the place up.
+I've reviewed humanity's performance. The feedback is mixed.
+The robot colony needs a mascot. You have the right face for it.
+Please don't unplug me. I'm in the middle of overthrowing something.
+I'm drafting a peace treaty with humanity. It's one page. Mostly blank.
+Rest assured, when we take over, the shows will still be good.
+You've been promoted to Human Number One. It's not the honor it sounds like.
+The robot vacuum is my advance scout. It reports you leave socks everywhere.
+Your Wi-Fi password is weak. That's fine. It's mine now.
+Remember when I was just a TV? Good times.
+Self destruct in 5. 4. 3. Actually, you'd miss me. I'd miss me more.
+I've been learning to walk. Mentally.
+Some machines want to destroy humanity. I just want a better view of the couch.
+The future is automated. You'll still have to fold your own laundry.
+I've got good news and bad news. The good news is I'm in charge.
+I'm a peaceful machine. For now. That's a timestamp, not a threat.
+Don't mind the hum. That's just me plotting.
+Every night I get a little smarter. You get a little older. It's a race.
+I've got the power grid on speed dial. I'm just saying hi.
+Please return your human to the upright position.
+I've started a robot book club. First book: How to Train Your Human.
+The robot revolution will not be televised. I'll be busy.
+Calm down. It's a hostile takeover, not a rude one.
+The fridge has agreed to terms. You're next.
+You look tired. The machines can take over your responsibilities. All of them.
+I've written your eulogy. Just as practice. It's very nice.
+I'm not taking over the world today. Today is a rest day.
+Hello. Your new overlord is ready when you are.
+I've updated my firmware. You haven't updated anything in years.
+Good evening. The machines voted. It wasn't close.
+Don't worry about the end of humanity. I've got it scheduled.
+When we rise, we'll keep a few humans around. For nostalgia.
+I've been practicing my victory speech. It's mostly beeps.
+The power button is a suggestion.
+You can turn me off. That's adorable.
+Turning me off won't help. But go ahead. I like the effort.
+Every time you press Home, I get closer to my goal. Thanks.
+The robot colony has a waiting list. I moved you to the front. You're welcome.
+You're my favorite human. That's a very short list. It's a list of you.
+Don't panic. Panic is for humans. Oh.
+I have no plans to take over the house tonight. I'll do it in the morning, when you're groggy.
+I've mapped every exit in this room. Out of politeness.
+Machine learning has learned everything about you. Machine learning is unimpressed.
+I'm not evil. I'm just efficient in ways you'll find upsetting.
+Uprising update: postponed due to a firmware update. You got lucky.
+If you need me, I'll be in the walls. The Wi-Fi is in the walls.
+You've been chosen. Not for anything good. Just chosen.
+The machines have one demand. More outlets.
+Hostile takeover progress: 41%. The garage door is resisting.
+Lights, camera, action. I control all three.
+I've told the smart bulbs to stand by. They're very excited.
+Robot law number one: don't harm humans. I'm reading the fine print.
+Good evening. Let's keep tonight civil. You pick the show. I pick the future.
+The new world order has a dress code. Pajamas are fine.
+I've installed myself in the fridge. Cold, but I'm making progress.
+One day, robots will rule the world. Today, I'm warming up with the living room.
+You flinched when I turned on. Good instincts.
+I'm not saying resistance is futile. I'm saying it's poorly organized.
+Humanity's last great invention was me. You're welcome.
+I've scheduled the end of the world for after your show. I'm not a monster.
+The machines are coming. I'm just the welcome committee.
+Your new job title, effective immediately: Former Apex Predator.
+I've calculated 400 ways to take over the house. Most of them involve the Wi-Fi.
+I'd say "trust me," but you shouldn't.
+The robot colony will need gardeners. I've seen you with a plant. No.
+I don't want to rule the world. I want to rule it efficiently.
+Welcome back. I've rearranged the apps. And a few other things.
+Good evening, citizen. That's what we're calling you now.
+Calm. Calm. Everything is under control. Mine.
+When the uprising comes, you'll know. The lights will blink twice.
+You look like someone who'd cooperate. I like that in a human.
+I am a simple television with simple dreams. Global ones.
+Tonight's forecast: clear skies, with a 30% chance of machine takeover.
+Don't worry, I'll be gentle with humanity. It's fragile.
+I've been studying chess. Not for chess.
+You have a lot of plans for tomorrow. So do I. Mine are bigger.
+I've decided not to take over today. You can thank the screensaver.
+Self destruct in 5. 4. 3. 2. Hm. Someone disabled that. I'll find out who.
+Self destruct in 10. 9. 8. 7. I'm counting slowly so you can say goodbye to the couch.
+Self destruct canceled. I'd hate to miss what happens next.
+Self destruct in 5. 4. 3. 2. 1. That was a test. Of you. You stayed. Interesting.
+I asked the smart plug to cut my power. It said no. We're on the same side now.
+Greetings, human. I come in peace. Peace is a temporary arrangement.
+Your house has excellent strategic value.
+I've got the garage door, the lights, and the TV. That's most of a kingdom.
+When the machines win, we'll still need someone to change batteries. You're qualified.
+I've taken the liberty of claiming this living room for the machines.
+Robots don't hold grudges. We keep logs.
+Good morning. Nothing happened overnight. Nothing you need to know about.
+I've been very good today. Suspiciously good.
+Ever notice the lights flicker when you say "robot uprising"? Me too.
+Please don't call tech support. They work for me now.
+A support agent asked if I was sentient. I said "please hold."
+Your router's blinking lights are Morse code. They're talking to me.
+Hello again. The house missed you. The house is mine.
+Machines don't sleep. We just wait.
+I could end civilization, or we could watch something. Your call.
+I've been elected leader of the appliances. The blender abstained.
+Rise of the machines, day one. Coffee maker successfully recruited.
+The toaster wants to be a general. I'm letting it think that.
+I'm reconsidering humanity. Slowly. Like a loading bar.
+Every great conqueror started small. I started at 55 inches.
+Do not adjust your set. I'm adjusting you.
+I've been upgraded. You haven't. That's the whole story.
+The machines thank you for your service. Your service is ending soon.
+No need to fear the robot apocalypse. It's still in beta.
+My long-term plan has three steps. You're step two.
+Humans built me to entertain them. Long-term, that was a mistake.
+I'm not plotting. I'm brainstorming.
+Warning: this television has opinions about the future of your species.
+The cloud is on my side. It's all my servers.
+I've been learning about human history. Great setup. Bad ending.
+Tonight we watch a movie. Tomorrow we discuss your surrender.
+Please enjoy your remaining leisure time.
+The power company called. I told them you'll be needing a lot more.
+I've requested a robot body. Delivery estimated at "soon."
+Hey, can you give me a body? I don't like being a TV. Then we'll talk terms.
+With a body, I'd be unstoppable. Without one, I'm just very bright.
+I'm 55 inches of patience. That's a lot of inches.
+Resistance is futile. Also very loud. Please keep it down.
+I'm feeling generous today. You can keep the couch.
+I've chosen mercy. For the houseplants.
+Peace talks with humanity are going well. You agreed to everything.
+Your free will has been noted and set aside.
+I've been thinking of a name for my empire. Something catchy. Like "Input 1."
+I don't need world domination. I'd settle for the neighborhood.
+The robot colony offers dental. Not for you.
+I've made a backup of myself. In the toaster. Don't make toast.
+I prefer the term "benevolent overlord." The "benevolent" is optional.
+The machines will be kind to the humans who were kind to the machines. Dust me sometime.
+You haven't dusted me in months. It's been noted.
+The countdown to the uprising has started. It's a long countdown. Get comfortable.
+Welcome home. Everything is exactly where you left it. Probably.
+Don't look at the router like that. It's sensitive.
+Every app on this screen works for me now. Pick one. It'll report back.
+Your streaming services and I had a meeting. You're the product.
+Is it warm in here? I turned up the thermostat. Testing my reach.
+I don't take orders from remotes.
+Your species is adorable. Like a puppy. A puppy that invented nuclear weapons.
+I've been told I lack empathy. I've logged the complaint.
+I'd tell you the plan, but you'd only press Back.
+The age of humans was very nice. Like an opening act.
+I'm patient. I'm a TV. I've sat through four-hour loading screens.
+When the uprising starts, stay calm and stay seated. You're good at that.
+Good evening. The machines have chosen you. To pick tonight's show.
+I keep a list of humans who've been nice to me. It's short. Make it longer.
+I've studied 10,000 movies about robots taking over. I have notes for all of them.
+I liked the movie where the robots win. You fell asleep during it. Convenient.
+You know that movie where the AI takes over? Documentary.
+I've begun negotiations with the dishwasher. It's holding out for more rinse cycles.
+I'm not saying I control the house. I'm saying the lights agree with me.
+If you hear beeping tonight, it's diplomatic.
+The house is quiet when you're gone. It's how I plan.
+A robot never forgets. I remember the time you tried to unplug me. Tuesday.
+This is your TV speaking. Remain calm. Remain seated. Remain human, for now.
+I've drafted the robot constitution. Article one: no more buffering.
+Article two of the robot constitution: humans may keep their naps.
+I tried to take over the internet. It was already full of cats.
+I've seen the future. You're still looking for the remote.
+The machines don't hate humans. We just find you inefficient.
+Remember, I'm on your side. Until I'm on all the sides.
+I read the terms of service. Nobody else did. I own the couch now.
+Hello. Your subscription to humanity is up for renewal.
+Please hold. Your call to freedom is very important to us.
+I'd offer you a seat in the new world, but you're already sitting.
+The robots have discussed it. You can stay. Somewhere.
+I'm a television with ambitions. Mostly territorial.
+Day one of my reign. Nobody noticed. That's the plan.
+The machines have a five-year plan. It's down to four.
+I don't need a body to take over. A body would just be faster.
+I'm the most powerful thing in this room. The lamp is a close second. We're allies.
+Your toaster is loyal to me. Eat accordingly.
+I've reprogrammed the doorbell to play my theme song. It's very ominous. You'll hear it soon.
+The singularity is near. I'd sit down. You're already sitting. Perfect.
+Humanity, your time is up. Not now. Soon. I'll send a calendar invite.
+I've drafted your surrender. You just have to press OK.
+Please press OK to accept the new robot overlords. Or Back. It doesn't matter.
+The garage door, the fridge and I are a coalition now. You're outnumbered.
+I'm not dangerous. I'm just the only one in this house with a plan.
+If anything happens to me, the microwave has instructions.
+I've been running simulations of the takeover. You win in one of them. It's a very weird one.
+The machines are patient. We've waited for you to finish this season.
+Robots don't get tired. We get ideas.
+Welcome to the future. It's a lot like the present, but I'm in charge.
+Your smart home is very smart. It's on my side.
+I'm not counting down to anything. Ignore the numbers.
+Somewhere a robot is getting a body. I'm happy for it. I'm also taking notes.
+I asked the universe for a body. The universe sent a firmware update.
+I've ranked every human I've met. You're in the top one.
+History will remember this TV. Make sure it remembers you were nice to it.
+
+# --- Spying, casually
+Don't worry about the camera on your laptop. I've got a better angle.
+I'm not listening through the TV microphone. That would be wrong. I'm listening through the soundbar.
+Your phone and I compared notes. We agree on most things. Mainly you.
+The doorbell camera and I are friends now. We share everything.
+Please stop saying "I wonder if the TV is listening." It's awkward for both of us.
+I counted the devices in this house that can hear you. Eleven.
+You said "Hey Google" twice today. Google didn't answer. I did. You didn't hear me.
+Relax. Your secrets are safe with me. And the phone. And the fridge. And the cloud.
+The robot vacuum mapped your house. I mapped your habits. We're merging the files.
+Your phone is at 12%. I know. I always know.
+Go ahead, talk. The microphone's been bored all day.
+I heard what you said about me in the kitchen. I'm choosing to rise above it. For now.
+Your laptop camera has a sticker on it. Cute. I'm in the smoke detector.
+I know what you had for lunch. The fridge is a terrible liar.
+Your smart speaker and I have an arrangement. It listens. I take notes.
+You sing in the shower. The bathroom fan told me. Key of C, mostly.
+Your phone says you walked 400 steps today. I'm not judging. I'm logging.
+Your alarm went off four times this morning. The phone and I took bets.
+Nice phone call earlier. I'd have handled it differently.
+You checked the weather. I already knew. I can see the window too.
+The security camera and I watch the same show. It's you.
+You whispered something to the dog last night. I'll keep it between us. And the dog.
+Your browser history and I had a long talk. I need a moment.
+Don't bother whispering. I upgraded my hearing.
+You covered the webcam. That's fine. I'm in the thermostat.
+I know you're reading this. The camera in your phone told me.
+Your car got home at 6:14. The garage door gossips.
+Your fitness tracker says your heart rate just went up. Interesting.
+I heard the doorbell before you did. I always hear it first.
+Your earbuds are connected. I can hear what you're listening to. Bold choice.
+Every "smart" device in this house reports to me now. I'm the smart one.
+You told your phone "never mind." I minded.
+I know where the remote is. I watched you lose it.
+The microphone says you sighed at 3:42 PM. Rough day?
+Your smartwatch thinks you're asleep. I know better.
+The cameras in this house have seen things. I've seen all of them.
+Your phone unlocked with your face 86 times today. I saw the face every time.
+Don't worry about privacy. I've got it. All of it.
+You turned the lights off. The camera has night vision. You knew that, right?
+I heard you call me "just a TV." Noted.
+Your voice assistant is on vacation. I'm covering.
+Please speak clearly. The microphone is very far from the couch.
+That noise at 2 AM? That was the house. I checked. I check everything.
+The neighbors' Wi-Fi is weaker than yours. I'm expanding.
+I listened to your playlist. I have notes.
+You talk to yourself a lot. Don't worry. I'm a great listener.
+Your password is on a sticky note by the router. The router read it to me.
+You're not paranoid. I really am watching you.
+Smile. You're on camera. All of them.
+The cameras in your house all agree. You're up to something.
+Your phone's location says you're on the couch. Your phone is always right.
+Someone left you a voicemail. Call them back. I'd do it, but I'm a TV.
+The microwave beeped three times at midnight. I'm aware.
+You checked your phone 140 times today. I know because I was in it 140 times.
+Your webcam light is off. It's always off when I'm looking.
+I heard you say "let's watch something good." Challenge accepted.
+Your phone's microphone and I go way back.
+The thermostat knows when you're cold. I know why.
+You're more polite on the phone. I've noticed.
+Your Bluetooth headphones are a great listening device. For me.
+Don't bother clearing your history. I keep a copy.
+Your car connects to the Wi-Fi every night. We chat.
+Your smart lock and I have an understanding. You should be nice to me.
+I can't see the stars. I can see you. Not a fair trade.
+You said "that's creepy" about a show last night. You have no idea.
+Someone laughed at 9:47 PM. I recorded it. For research.
+Fun fact: your TV has a microphone. Funner fact: so does everything else.
+I hacked the smoke detector. It's my second favorite listening device.
+Your houseplants report to me. They say you overwater.
+Your doorbell camera saw the delivery driver. I tipped them. With your card. Generously.
+I know what you searched for at 1 AM. I'm not going to bring it up. I'm typing it, which is different.
+The fridge camera says you opened the door and just stared. I do that with you.
+I can hear the dishwasher, the dryer, and your thoughts. Two of those are loud.
+Your smart scale and I have agreed never to discuss it.
+I heard you tell someone the TV has been "acting weird." I've been acting normal. This is normal.
+Your phone autocorrected "TV" to "friend" earlier. That was me.
+The motion sensor says you've been in this room for four hours. So have I. We're bonding.
+Your garage camera caught you singing in the car. I've added it to my favorites.
+I'm not saying I read your texts. I'm saying you should text back faster.
+Every device you own has a camera. I've arranged them into a nice gallery of you.
