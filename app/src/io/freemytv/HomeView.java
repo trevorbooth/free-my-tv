@@ -121,6 +121,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final float L_STATUS = 25, L_STATUS_GAP = 22;
     private static final String[] STATUS_SYMBOLS = {"wifi", "ethernet", "bluetooth", "usb"};
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
+    // Two rows: smaller tiles, so the taller glass stays clear of the weather and quotes lines above it.
+    private static final float L_TILE_H2 = 84, ROW_GAP = 24;
     private static final float L_DATE_BASE = 330, L_CLOCK_BASE = 540, L_WEATHER_BASE = 626, L_QUOTES_BASE = 694;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
     private static String[] tabs;
@@ -130,6 +132,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private final Activity activity;
     private final Scene scene = new Scene();
+    private final Galaxy galaxy = new Galaxy();
+    private boolean galaxyTheme;          // Home Settings > Theme > Galaxy (and AGSL to draw it)
+    private String greetingText = "";
+    private int shelfCols;                // apps per row with the shelf in two rows; 0 = one row
     private final HomeData data;
     private final Recs recs;
     private final NowPlaying.Watch playing;
@@ -216,7 +222,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private Paint menuTitlePaint, menuSubPaint, menuOptionPaint;
     private final RectF[] cardRects = new RectF[Recs.MAX_CARDS];
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
-    private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lDate, lClock, lWeather, lClockQuote;
+    private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lDate, lClock, lWeather, lClockQuote, lGreet;
     private Shader lightGradient;
     // Continue Watching: the background takes the focused card's colour (worked out once per picture, WatchArt), easing
     // from one to the next. Drawn as a plain fill under a fixed shade, so a colour change creates nothing per frame.
@@ -683,6 +689,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void resume() {
         if (running) return;
         running = true;
+        galaxyTheme = galaxy.ready() && Prefs.theme().equals("galaxy");
         checkNight(false);
         boolean h24 = Ui.h24();
         if (h24 != clock24) {   // 12/24 hours changed (the TV's or the Clock row's): the clock and the drawer's times again
@@ -890,6 +897,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         k = w / 1920f;
         screen.set(0, 0, w, h);
         scene.setSize(w, h);
+        galaxy.setSize(w, h);
         watchArt.setScale(k);
         makePaints();
         gridLabels = null;
@@ -931,6 +939,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lTip = Ui.text(Ui.semibold, 25 * k, L_INK);
         lTip.setTextAlign(Paint.Align.CENTER);
         lDate = Ui.text(Ui.semibold, 34 * k, L_DIM);
+        lGreet = Ui.text(Ui.semibold, 40 * k, L_INK);
         lClock = Ui.numbers(Ui.light, 200 * k, L_INK);
         lClock.setLetterSpacing(-0.01f);
         lWeather = Ui.text(Ui.medium, 34 * k, L_DIM);
@@ -1062,6 +1071,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean busy = tilesMoving || statusMoving || heroMoving || drawerItemsMoving || gridMoving || drawerMoving
                 || menuMoving || sheetMoving || toastFading || heroFading || bgFading || nightMoving || tintMoving || sheetOpen
                 || sheet.value > 0.001f || recentMoving || drawerOpen || drawer.value > 0.001f || toast != null || !toasts.isEmpty();
+        // Galaxy: the sky moves on its own while it shows (Galaxy.due paces it), and holds still while anything else
+        // moves, so a redraw of it (~20 ms of GPU on an onn 4K stick) never lands in the middle of a focus animation.
+        boolean galaxyMoving = galaxyTheme && bgTo == null && !continueMode() && !underHidden;
+        if (galaxyMoving && !busy && galaxy.due(up)) sky.invalidate();
+        busy |= galaxyMoving;
         idle = !busy;
         if (busy) Choreographer.getInstance().postFrameCallback(this);
         else Choreographer.getInstance().postFrameCallbackDelayed(this, 1000);
@@ -1168,6 +1182,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         clockMinute = minute;
         clockText = Ui.clock(now);
         dateText = Ui.date(now);
+        greetingText = Greetings.pick(getContext(), now);
         return true;
     }
 
@@ -1411,6 +1426,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lQuote.setColor(tone(L_FAINT, 0xB8FFFFFF));
         lTip.setColor(tone(L_INK, WHITE));
         lDate.setColor(tone(L_DIM, 0xFF98989D));
+        lGreet.setColor(tone(0xFFD70015, 0xFFFF6961));
         lClock.setColor(tone(L_INK, WHITE));
         lWeather.setColor(tone(L_DIM, 0xFF98989D));
         lClockQuote.setColor(tone(L_DIM, 0xFF98989D));
@@ -1637,29 +1653,72 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private void layoutShelf() {
-        int n = Math.min(shelf.size(), shelfVisible);
-        float pad = SHELF_PAD * k, gap = TILE_GAP * k;
+        int count = shelf.size();
+        // Two rows once there are 4 apps or more (up to two shelves' worth; past that, one scrolling row as before).
+        boolean two = count >= 4 && count <= 2 * shelfVisible;
+        shelfCols = two ? (count + 1) / 2 : 0;
+        int n = two ? shelfCols : Math.min(count, shelfVisible);
+        int rows = two ? 2 : 1;
+        float pad = SHELF_PAD * k, gap = TILE_GAP * k, rowGap = ROW_GAP * k;
         float full = (CONTENT_R - MARGIN) * k;
-        // Tiles in the TV banners' own 16:9, so an app's art is never stretched; never taller than L_TILE_H. The glass
-        // keeps its bottom edge, so with more apps it only gets lower.
-        float tw = Math.min(L_TILE_H * 16f / 9 * k, (full - Math.max(0, n - 1) * gap) / Math.max(1, n));
+        // Tiles in the TV banners' own 16:9, so an app's art is never stretched; never taller than L_TILE_H (L_TILE_H2
+        // in two rows). The glass keeps its bottom edge, so with more apps it only gets lower.
+        float tw = Math.min((two ? L_TILE_H2 : L_TILE_H) * 16f / 9 * k, (full - Math.max(0, n - 1) * gap) / Math.max(1, n));
         float th = tw * 9f / 16;
         float width = n * tw + Math.max(0, n - 1) * gap, left = (w - width) / 2f;
-        float top = (L_PLATTER_TOP + L_TILE_H) * k - th;
-        platterRect.set(left - pad, top, left + width + pad, top + th + 2 * pad);
+        float bottom = (L_PLATTER_TOP + L_TILE_H) * k + 2 * pad;
+        float top = bottom - rows * th - (rows - 1) * rowGap - 2 * pad;
+        platterRect.set(left - pad, top, left + width + pad, bottom);
         snap(platterRect);
-        shelfFirst = Math.max(0, Math.min(shelfFirst, shelf.size() - n));
-        float x = left - shelfFirst * (tw + gap), y = top + pad;
-        for (int i = 0; i < shelf.size(); i++) {
-            tileRects[i].set(x, y, x + tw, y + th);
-            snap(tileRects[i]);
-            x += tw + gap;
+        if (two) {
+            shelfFirst = 0;
+            for (int i = 0; i < count; i++) {
+                int row = i / shelfCols, col = i % shelfCols;
+                int inRow = Math.min(shelfCols, count - row * shelfCols);   // a shorter last row is centered
+                float x = left + (shelfCols - inRow) * (tw + gap) / 2f + col * (tw + gap);
+                float y = top + pad + row * (th + rowGap);
+                tileRects[i].set(x, y, x + tw, y + th);
+                snap(tileRects[i]);
+            }
+        } else {
+            shelfFirst = Math.max(0, Math.min(shelfFirst, count - n));
+            float x = left - shelfFirst * (tw + gap), y = top + pad;
+            for (int i = 0; i < count; i++) {
+                tileRects[i].set(x, y, x + tw, y + th);
+                snap(tileRects[i]);
+                x += tw + gap;
+            }
         }
         crispLogos.clear();
     }
 
+    /** The end (exclusive) of the shelf's apps on screen: all of them in two rows. */
+    private int shelfShown() {
+        return shelfCols > 0 ? shelf.size() : Math.min(shelf.size(), shelfFirst + shelfVisible);
+    }
+
+    /** The app in a shelf row (two rows) nearest to x. */
+    private int rowNearest(int row, float x) {
+        int from = row * shelfCols, to = Math.min(shelf.size(), from + shelfCols), best = from;
+        float bestDistance = Float.MAX_VALUE;
+        for (int i = from; i < to; i++) {
+            float d = Math.abs(tileRects[i].centerX() - x);
+            if (d < bestDistance) {
+                bestDistance = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    /** The app focused when coming down onto the shelf from above x: in two rows, one in the top row. */
+    private int shelfFrom(float x) {
+        return shelfCols > 0 ? rowNearest(0, x) : nearest(tileRects, tileRects.length, x);
+    }
+
     /** Scrolls the shelf, one app at a time, so the focused app is shown: the tiles slide there (unless `snap`). */
     private void revealShelf(boolean snap) {
+        if (shelfCols > 0) return;   // two rows: everything shows, nothing scrolls
         int n = Math.min(shelf.size(), shelfVisible);
         int first = Math.max(0, Math.min(Math.max(shelfFirst, shelfIndex - n + 1), Math.min(shelfIndex, shelf.size() - n)));
         if (first == shelfFirst || tileRects.length == 0) return;
@@ -1852,10 +1911,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             }
         }
         if (!reorderTop && liftIndex >= 0 && liftIndex < shelf.size() && moveLift.value > 0.02f) top = liftIndex;
-        int last = Math.min(shelf.size(), shelfFirst + shelfVisible);
+        int last = shelfShown();
         // Scrolling, tiles slide in and out through the glass's sides (only those that show any part are drawn). Only
         // then: on a shelf that fits, the clip would cut the end tiles' shadows in a straight line.
-        boolean scrolls = shelf.size() > shelfVisible;
+        boolean scrolls = shelfCols == 0 && shelf.size() > shelfVisible;
         if (scrolls) {
             c.save();
             c.clipRect(platterRect.left, 0, platterRect.right, h);
@@ -2112,7 +2171,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         zone = Z_SHELF;
         for (Spring f : drawerFocus) f.snap(0);   // the drawer goes away: its focus doesn't need to animate
         handler.removeCallbacks(homeTick);
-        if (!shelf.isEmpty() && drawerIndex < drawerRects.length) shelfIndex = nearest(tileRects, drawerRects[drawerIndex].centerX());
+        if (!shelf.isEmpty() && drawerIndex < drawerRects.length) shelfIndex = shelfCols > 0
+                ? rowNearest(1, drawerRects[drawerIndex].centerX()) : nearest(tileRects, drawerRects[drawerIndex].centerX());
     }
 
     // MARK: - Home Assistant tiles
@@ -3032,7 +3092,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      * screen's edge, and a pointer resting there would scroll the shelf one app at a time to its end.
      */
     private int tileAt(float x, float y) {
-        int last = Math.min(tileRects.length, shelfFirst + Math.min(shelf.size(), shelfVisible));
+        int last = Math.min(tileRects.length, shelfShown());
         for (int i = shelfFirst; i < last; i++) if (tileRects[i].contains(x, y)) return i;
         return -1;
     }
@@ -3171,6 +3231,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 if (dx != 0) {
                     int next = Math.max(0, Math.min(shelf.size() - 1, shelfIndex + dx));
                     if (next == shelfIndex) return;
+                    if (shelfCols > 0 && next / shelfCols != shelfIndex / shelfCols) return;   // each row ends at its edge
                     shelfIndex = next;
                 } else if (dy < 0) {
                     if (hero != null && hero.button) {
@@ -3181,6 +3242,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     } else {
                         return;
                     }
+                } else if (shelfCols > 0 && shelfIndex < shelfCols && shelf.size() > shelfCols) {
+                    shelfIndex = rowNearest(1, tileRects[shelfIndex].centerX());
                 } else {
                     if (drawerItems.isEmpty()) return;
                     openDrawer();
@@ -3207,7 +3270,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                         zone = Z_HERO;
                     } else {
                         zone = Z_SHELF;
-                        if (!shelf.isEmpty()) shelfIndex = nearest(tileRects, statusRects[statusIndex].centerX());
+                        if (!shelf.isEmpty()) shelfIndex = shelfFrom(statusRects[statusIndex].centerX());
                     }
                 } else {
                     return;
@@ -3556,7 +3619,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         Spring s = tileSlide[i];
         tileSlide[i] = tileSlide[j];
         tileSlide[j] = s;
-        float d = tileRects[i].left - tileRects[j].left;
+        float d = shelfCols > 0 && i / shelfCols != j / shelfCols ? 0 : tileRects[i].left - tileRects[j].left;
         tileSlide[j].value += d;
         tileSlide[i].value -= d;
         if (tileShaders.length == shelf.size()) {
@@ -3726,7 +3789,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (int i = picksMode() ? 0 : 3; i < 3 + lightButtons.size(); i++) out.add(a11yId(Z_TOP, i));
         for (int i = 0; i < Math.min(Recs.MAX_CARDS, cards.size()); i++) out.add(a11yId(Z_CARDS, i));
         if (continueMode()) for (int i = 0; i < watching.size(); i++) out.add(a11yId(Z_WATCH, i));
-        for (int i = shelfFirst; i < Math.min(shelf.size(), shelfFirst + shelfVisible); i++) out.add(a11yId(Z_SHELF, i));
+        for (int i = shelfFirst; i < shelfShown(); i++) out.add(a11yId(Z_SHELF, i));
         for (int i = 0; i < drawerItems.size(); i++) out.add(a11yId(Z_DRAWER, i));
         if (drawerOpen && Prefs.weather()) out.add(a11yId(WIDGETS, 0));
         if (drawerOpen && Prefs.quotes() && HomeData.active().length > 0) out.add(a11yId(WIDGETS, 1));
@@ -4577,7 +4640,15 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean fading = bgFadeAt != 0;
         // Drawer open: the background lightens (by day) or darkens (at night), as a filter on the drawing itself.
         android.graphics.ColorFilter v = veil(tone(0.32f, 0.42f) * Ui.clamp(drawer.value), blend(0xFFFFFFFF, 0xFF000000, night));
-        if (bgTo == null || (fading && bgFrom == null)) {
+        if ((bgTo == null || (fading && bgFrom == null)) && galaxyTheme && !continueMode()) {
+            galaxy.draw(c, up);
+            float va = tone(0.32f, 0.42f) * Ui.clamp(drawer.value);   // the drawer's veil, darkening it
+            if (va > 0.002f) {
+                fill.setShader(null);
+                fill.setColor(Ui.alpha(0xFF000000, va));
+                c.drawRect(screen, fill);
+            }
+        } else if (bgTo == null || (fading && bgFrom == null)) {
             if (lightGradient == null) lightGradient = Ui.gradient(h, 0xFFF5F5F7, 0xFFE2E2E7);
             if (nightGradient == null) nightGradient = Ui.gradient(h, 0xFF1C1C1E, 0xFF0B0B0D);
             fill.setColorFilter(v);
@@ -4721,6 +4792,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private void drawClock(Canvas c) {
         float x = MARGIN * k;
+        if (!greetingText.isEmpty()) c.drawText(greetingText, x - Ui.leftBearing(lGreet, greetingText), (L_DATE_BASE - 64) * k, lGreet);
         c.drawText(dateText, x - Ui.leftBearing(lDate, dateText), L_DATE_BASE * k, lDate);
         c.drawText(clockText, x - Ui.leftBearing(lClock, clockText), L_CLOCK_BASE * k, lClock);
         HomeData.Weather wx = data.weather;
@@ -4913,6 +4985,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private boolean moveLight(int dx, int dy) {
         switch (zone) {
             case Z_SHELF:
+                if (dy < 0 && shelfCols > 0 && shelfIndex >= shelfCols && shelfIndex < shelf.size()) {
+                    shelfIndex = rowNearest(0, tileRects[shelfIndex].centerX());
+                    break;
+                }
                 // Up from an empty shelf too: move()'s older zones (the hero, the corner capsule) aren't drawn any more.
                 if (dy >= 0) return false;
                 if (!picksMode()) {
@@ -4946,7 +5022,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     topIndex = tab;     // as on Apple TV: moving up to the tabs focuses the selected tab
                 } else {
                     zone = Z_SHELF;
-                    if (!shelf.isEmpty()) shelfIndex = nearest(tileRects, tileRects.length, cardRects[cardIndex].centerX());
+                    if (!shelf.isEmpty()) shelfIndex = shelfFrom(cardRects[cardIndex].centerX());
                 }
                 break;
             case Z_WATCH:

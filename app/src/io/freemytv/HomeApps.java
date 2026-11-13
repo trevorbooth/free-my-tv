@@ -114,6 +114,7 @@ final class HomeApps {
         {"now", "NOW", "com.bskyb.nowtv.beta", "1B9C8E", "", "1"},              // UK: Sky's NOW
         {"peacock", "Peacock", "com.peacocktv.peacockandroid", "6E55DC", "", "1"},
         {"peacock", "Peacock", "com.peacock.peacockfiretv", "6E55DC", "", "1"},
+        {"tubi", "Tubi", "com.tubitv", "7408FF", "", "1"},
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
         {"kinopoisk", "Кинопоиск", "ru.kinopoisk.tv", "FF5500", "white", "1"},
         {"okko", "Okko", "ru.more.play", "6D43FF", "", "1"},
@@ -226,8 +227,10 @@ final class HomeApps {
         List<String> out = new ArrayList<>();
         Set<String> keys = new HashSet<>();
         PackageManager pm = c.getPackageManager();
+        // Up to 10 by default (the shelf scrolls past 8); low-memory TVs keep 8, since every logo stays in memory.
+        int cap = lowRam(c) ? FEW_APPS : 10;
         for (String[] d : SHELF) {
-            if (out.size() < FEW_APPS && !keys.contains(d[0]) && launchIntent(pm, d[2]) != null) {
+            if (out.size() < cap && !keys.contains(d[0]) && launchIntent(pm, d[2]) != null) {
                 keys.add(d[0]);
                 out.add(d[2]);
             }
