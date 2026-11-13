@@ -123,6 +123,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
     // Two rows: smaller tiles, so the taller glass stays clear of the weather and quotes lines above it.
     private static final float L_TILE_H2 = 130, ROW_GAP = 24;
+    /** The glass bar behind the shelf's apps (off in this fork: the tiles float over the photo). */
+    private static final boolean SHELF_GLASS = false;
     private static final float L_DATE_BASE = 336, L_CLOCK_BASE = 468, L_WEATHER_BASE = 540, L_QUOTES_BASE = 598;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
     private static String[] tabs;
@@ -1732,7 +1734,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** Shelf layer: the glass bar and its shadow (it only changes with the background). */
     private void drawPlatter(Canvas c) {
-        if (shelf.isEmpty()) return;
+        // This fork: the apps float over the background, with no glass bar behind them.
+        if (shelf.isEmpty() || !SHELF_GLASS) return;
         float radius = (TILE_RADIUS + SHELF_PAD) * k;
         tmp.set(platterRect);
         tmp.offset(0, 18 * k);
