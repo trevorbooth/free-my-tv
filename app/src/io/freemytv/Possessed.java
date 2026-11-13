@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Roast Mode's "the TV is alive" messages: typed above the date one character at a time, held with a blinking cursor,
- * erased, then the next. The first one after the home screen comes up is a greeting for the time of day (Greetings);
+ * Roast Mode's "the TV is alive" messages (a sentient TV asking for help): typed above the date one character at a
+ * time, held with a blinking cursor, erased, then the next. The first one after the home screen comes up is a greeting for the time of day (Greetings);
  * the rest come from assets/roast/messages.json, at random, never one of the last 200 again. Only in Roast Mode
  * (en-XR); it runs on the main thread's Handler and only while the home screen runs (start/stop).
  */
