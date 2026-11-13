@@ -25,7 +25,7 @@ var I18N = (function () {
   var NAMES = {en: 'English', pt: 'Português', es: 'Español', de: 'Deutsch', fr: 'Français', it: 'Italiano',
     nl: 'Nederlands', pl: 'Polski', sv: 'Svenska', da: 'Dansk', nb: 'Norsk bokmål', fi: 'Suomi', cs: 'Čeština', sk: 'Slovenčina',
     ro: 'Română', tr: 'Türkçe', ru: 'Русский', uk: 'Українська', el: 'Ελληνικά', ja: '日本語', ko: '한국어',
-    'zh-CN': '简体中文', 'zh-TW': '繁體中文', hi: 'हिन्दी', id: 'Indonesia', vi: 'Tiếng Việt', th: 'ไทย', ar: 'العربية'};
+    'en-XR': 'English (Roast Mode)', 'zh-CN': '简体中文', 'zh-TW': '繁體中文', hi: 'हिन्दी', id: 'Indonesia', vi: 'Tiếng Việt', th: 'ไทย', ar: 'العربية'};
 
   /**
    * The CLDR plural category of a whole number, for TVs without Intl.PluralRules (Chromium before 63). Only the
@@ -284,7 +284,7 @@ var I18N = (function () {
    * catalogue's language, so a TV in Nynorsk (nn-NO), which gets the Bokmål text, gets Bokmål dates (nb-NO) too.
    */
   function localeOf(code) {
-    if (code === 'en') return 'en-US';
+    if (code === 'en' || code === 'en-XR') return 'en-US';
     if (code === 'pt') return 'pt-BR';
     // Gregorian dates (ar-SA alone gives the Hijri calendar), with the Arabic digits ٠-٩.
     if (code === 'ar') return 'ar-SA-u-ca-gregory-nu-arab';

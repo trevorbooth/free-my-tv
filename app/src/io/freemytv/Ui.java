@@ -236,6 +236,8 @@ final class Ui {
         // Both Chinese catalogues are "中文" to Java: the script tells them apart.
         if (code.equalsIgnoreCase("zh-CN")) return "简体中文";
         if (code.equalsIgnoreCase("zh-TW")) return "繁體中文";
+        // Roast Mode: English, but it swears at you. Only when picked; "auto" never lands on it.
+        if (code.equalsIgnoreCase("en-XR")) return "English (Roast Mode)";
         Locale l = Locale.forLanguageTag(code);
         String name = l.getDisplayLanguage(l);
         if (name.isEmpty()) return code;
@@ -305,7 +307,7 @@ final class Ui {
     }
 
     private static Locale localeOf(String lang) {
-        if (lang.equals("en")) return Locale.US;
+        if (lang.equals("en") || lang.equals("en-XR")) return Locale.US;
         if (lang.equals("pt")) return new Locale("pt", "BR");
         if (lang.indexOf('-') > 0) return Locale.forLanguageTag(lang);
         Locale tv = Locale.getDefault();
