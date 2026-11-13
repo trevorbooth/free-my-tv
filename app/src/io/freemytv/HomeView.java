@@ -4790,18 +4790,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (typedLines == null || !typedLines.text.equals(text) || typedLines.paint != lGreet) {
             typedLines = Possessed.wrap(text, lGreet, 1150 * k, 3);
         }
-        int left = possessed.shown();
         float lineH = 52 * k, base = (L_DATE_BASE - 74) * k - (typedLines.lines.length - 1) * lineH;
-        for (int i = 0; i < typedLines.lines.length; i++) {
-            String line = typedLines.lines[i];
-            int n = Math.min(left, line.length());
-            boolean last = left <= line.length() || i == typedLines.lines.length - 1;
-            String part = line.substring(0, Math.max(0, n));
-            if (last && possessed.cursor()) part += "\u2588";
-            if (!part.isEmpty()) c.drawText(part, x - Ui.leftBearing(lGreet, part), base + i * lineH, lGreet);
-            left -= line.length() + 1;   // the space the wrap took out
-            if (last) break;
-        }
+        Possessed.draw(c, typedLines, possessed.shown(), possessed.cursor(), x, base, lineH);
     }
 
     private void drawClock(Canvas c) {

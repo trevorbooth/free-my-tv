@@ -12,6 +12,7 @@ import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RuntimeShader;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -135,6 +136,12 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     private long startedAt, firstAt, lastFrame, lastSky;
     private int w, h;
     private float k = 1;
+    // Roast Mode: the TV types to you here too, top left (the clock and date are top right).
+    private final Possessed possessed = new Possessed();
+    private Possessed.Wrapped typedLines;
+    private Paint typedPaint;
+    private final Paint typedPanel = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF typedBox = new RectF();
     private long minute = -1;
     private String clock = "", date = "";
     private Paint datePaint, clockPaint, weatherPaint, weatherDim, quotePaint, stalePaint;
@@ -195,6 +202,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         prepareNext();
         handler.postDelayed(tick, 60_000);
         playing.start();
+        possessed.start(getContext(), null);   // the frames below redraw it (every 45 ms)
         Choreographer.getInstance().postFrameCallback(this);
         invalidate();
     }
@@ -207,6 +215,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         Choreographer.getInstance().removeFrameCallback(this);
         handler.removeCallbacks(tick);
         playing.stop();
+        possessed.stop();
         data.removeListener(this);
         recs.removeListener(this);
         // The photos stay in GPU memory until the garbage collector runs: release them now (after the last frame).
@@ -472,7 +481,10 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             if (fallback) drawFallback(canvas, up, current == null ? 1 : 1 - first);
             else canvas.drawRect(0, 0, w, h, black);
         }
-        if (current == null) return;
+        if (current == null) {
+            drawTyped(canvas, 1);
+            return;
+        }
         if (fallback && first >= 1) fallback = false;
 
         place(current, up, placeA);
@@ -492,6 +504,31 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         }
         drawGlass(canvas, first, e);
         drawCaptions(canvas, up);
+        drawTyped(canvas, first);
+    }
+
+    /** Roast Mode's typed message, top left: up to three lines with a blinking block cursor, over a soft shadow. */
+    private void drawTyped(Canvas c, float alpha) {
+        String text = possessed.text();
+        if (text.isEmpty() || alpha <= 0.01f) return;
+        if (typedPaint == null || typedPaint.getTextSize() != 40 * k) {
+            typedPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
+            typedPaint.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
+            typedPaint.setTextSize(40 * k);
+            typedPaint.setShadowLayer(14 * k, 0, 2 * k, 0xF0000000);
+            typedLines = null;
+        }
+        if (typedLines == null || !typedLines.text.equals(text)) typedLines = Possessed.wrap(text, typedPaint, 1050 * k, 3);
+        // A dark terminal panel behind it, sized to the whole message (it doesn't grow as it types), so it reads over
+        // a bright, busy photo.
+        float x = MARGIN * k, base = (DATE_BASE + 18) * k, lineH = 56 * k, pad = 26 * k, widest = 0;
+        for (String line : typedLines.lines) widest = Math.max(widest, typedPaint.measureText(line + "\u2588"));
+        typedBox.set(x - pad, base + typedPaint.ascent() - pad * 0.6f, x + widest + pad,
+                base + (typedLines.lines.length - 1) * lineH + typedPaint.descent() + pad * 0.6f);
+        typedPanel.setColor(Ui.alpha(0xFF050807, 0.72f * alpha));
+        c.drawRoundRect(typedBox, 18 * k, 18 * k, typedPanel);
+        typedPaint.setColor(Ui.alpha(0xFF5CFF9D, alpha));
+        Possessed.draw(c, typedLines, possessed.shown(), possessed.cursor(), x, base, lineH);
     }
 
     /** What an app is playing, cut to fit the corner and the bottom line: once per title, not while recording. */

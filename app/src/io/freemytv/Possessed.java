@@ -1,6 +1,7 @@
 package io.freemytv;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
@@ -167,6 +168,23 @@ final class Possessed {
             this.text = text;
             this.paint = paint;
             this.lines = lines;
+        }
+    }
+
+    /**
+     * Draws what has been typed of `t` so far, line by line from the baseline `base`, with the block cursor after the
+     * last character when `cursor`. Shared by the home screen and the screensaver.
+     */
+    static void draw(Canvas c, Wrapped t, int shown, boolean cursor, float x, float base, float lineH) {
+        int left = shown;
+        for (int i = 0; i < t.lines.length; i++) {
+            String line = t.lines[i];
+            boolean last = left <= line.length() || i == t.lines.length - 1;
+            String part = line.substring(0, Math.max(0, Math.min(left, line.length())));
+            if (last && cursor) part += "\u2588";
+            if (!part.isEmpty()) c.drawText(part, x - Ui.leftBearing(t.paint, part), base + i * lineH, t.paint);
+            left -= line.length() + 1;   // the space the wrap took out
+            if (last) break;
         }
     }
 
