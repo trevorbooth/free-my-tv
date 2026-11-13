@@ -608,6 +608,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             checkNight(true);
             updatePicks();      // new ones every hour
             updateSleep();
+            News.refreshIfStale(newsReady);
+            if (News.has()) heroLayer.invalidate();   // the next headline (News.SHOW_MS)
             handler.postDelayed(this, 15_000);
         }
     };
@@ -691,6 +693,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (running) return;
         running = true;
         possessed.start(getContext(), this::typed);
+        News.refreshIfStale(newsReady);
         checkNight(false);
         boolean h24 = Ui.h24();
         if (h24 != clock24) {   // 12/24 hours changed (the TV's or the Clock row's): the clock and the drawer's times again
@@ -1869,6 +1872,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             text.setColor(textColor);
             return;
         }
+        // Crypto off: the headlines take the row.
+        if (HomeData.coinCount() == 0) {
+            text.setColor(textColor);
+            drawNews(c, clock, text, right, fade);
+            return;
+        }
         // One read of the list, so n always matches the coins drawn below.
         int[] coins = HomeData.active();
         int n = coins.length;
@@ -1897,6 +1906,39 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (stale.isEmpty()) return;
         if (clock) c.drawText(stale, x - spacing + 24 * k + staleQuote.measureText(stale), base, staleQuote);
         else c.drawText(stale, right - total - 24 * k, base, staleQuote);
+    }
+
+    private String newsShown, newsFit;
+    private float newsLabelW;
+
+    /** The headline row: a "NEWS" tag in the typing's green, then the headline, cut to fit. */
+    private void drawNews(Canvas c, boolean clock, Paint text, float right, float fade) {
+        String line = News.headline(System.currentTimeMillis());
+        if (line == null) return;
+        String tag = "NEWS";
+        int color = text.getColor(), tagColor = Ui.alpha(tone(0xFF0A7A3A, 0xFF5CFF9D), fade);
+        float max = clock ? 1150 * k : 700 * k, gap = 16 * k;
+        if (!line.equals(newsShown)) {
+            newsShown = line;
+            newsLabelW = text.measureText(tag);
+            fitPaint.set(text);
+            newsFit = TextUtils.ellipsize(line, fitPaint, max - newsLabelW - gap, TextUtils.TruncateAt.END).toString();
+        }
+        float base = clock ? L_QUOTES_BASE * k : (L_TABBAR_TOP + L_TABBAR_H / 2) * k + Ui.cap(text) / 2;
+        float width = newsLabelW + gap + text.measureText(newsFit);
+        float x = clock ? MARGIN * k : right - width;
+        text.setColor(tagColor);
+        c.drawText(tag, x, base, text);
+        text.setColor(Ui.alpha(color, fade));
+        c.drawText(newsFit, x + newsLabelW + gap, base, text);
+        text.setColor(color);
+    }
+
+    /** New headlines came in (on News's thread). */
+    private final Runnable newsReady = () -> post(this::newsArrived);
+
+    private void newsArrived() {
+        if (running) heroLayer.invalidate();
     }
 
     private void drawTiles(Canvas c) {
@@ -4733,7 +4775,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (clockMode()) {
             titleRight = 0;
             drawClock(c);
-            if (HomeData.coinCount() > 0 || playingTab != null) drawQuotes(c);
+            if (HomeData.coinCount() > 0 || playingTab != null || News.has()) drawQuotes(c);
             return;
         }
         String hello = picksMode() ? Ui.tr("For You") : Ui.tr("Continue Watching");
@@ -4741,7 +4783,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         titleRight = MARGIN * k + lTitle.measureText(hello);
         if (!picksMode()) {
             if (continueMode()) drawWatchRow(c);
-            if (HomeData.coinCount() > 0 || playingTab != null) drawQuotes(c);
+            if (HomeData.coinCount() > 0 || playingTab != null || News.has()) drawQuotes(c);
             return;
         }
         // Text tabs (the selected one in bold, in the main text color); with focus on the tabs, the selected one gets
@@ -4774,7 +4816,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (int i = 0; i < slots; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
         for (int i = 0; i < slots; i++) if (i != top) drawLightCard(c, i);
         if (top >= 0) drawLightCard(c, top);
-        if (HomeData.coinCount() > 0 || playingTab != null) drawQuotes(c);
+        if (HomeData.coinCount() > 0 || playingTab != null || News.has()) drawQuotes(c);
     }
 
     private boolean picksOn() {

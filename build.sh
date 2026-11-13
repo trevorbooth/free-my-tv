@@ -136,6 +136,7 @@ final class Config {
     static final boolean HOME_ASSISTANT = $HA;   // home_assistant_url and _entities set: Home Settings shows its row
     static final boolean DISABLE_ASSISTANT = $ASSIST;
     static final boolean SHOW_CRYPTO = $CRYPTO;
+    static final String NEWS_FEED = "$(prop news_feed https://feeds.npr.org/1001/rss.xml)";   // headlines where crypto was (https RSS/Atom)
     static final boolean HIDE_ANIMATION = $ANIMATION;
     static final boolean SCREENSAVER = $SAVER;   // false: the TV keeps its own
     static final boolean GENERIC = $GENERIC;   // built with --generic, as the APK on GitHub's releases (Updates)

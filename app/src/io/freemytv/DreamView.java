@@ -203,6 +203,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         handler.postDelayed(tick, 60_000);
         playing.start();
         possessed.start(getContext(), null);   // the frames below redraw it (every 45 ms)
+        News.refreshIfStale(null);
         Choreographer.getInstance().postFrameCallback(this);
         invalidate();
     }
@@ -505,6 +506,37 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         drawGlass(canvas, first, e);
         drawCaptions(canvas, up);
         drawTyped(canvas, first);
+        drawNews(canvas, first);
+    }
+
+    private String newsShown, newsFit;
+    private Paint newsPaint, newsTag;
+    private final RectF newsBox = new RectF();
+
+    /** Crypto off: a headline at the bottom left, on the same dark panel as the typed messages. */
+    private void drawNews(Canvas c, float alpha) {
+        if (HomeData.coinCount() > 0 || alpha <= 0.01f) return;
+        String line = News.headline(System.currentTimeMillis());
+        if (line == null) return;
+        if (newsPaint == null || newsPaint.getTextSize() != 30 * k) {
+            newsPaint = Ui.text(Ui.medium, 30 * k, 0xFFFFFFFF);
+            newsTag = Ui.text(Ui.semibold, 30 * k, 0xFF5CFF9D);
+            newsShown = null;
+        }
+        float x = MARGIN * k, base = h - 70 * k, gap = 16 * k, pad = 24 * k, tagW = newsTag.measureText("NEWS");
+        if (!line.equals(newsShown)) {
+            newsShown = line;
+            TextPaint fit = new TextPaint(newsPaint);
+            newsFit = TextUtils.ellipsize(line, fit, 1300 * k - tagW - gap, TextUtils.TruncateAt.END).toString();
+        }
+        newsBox.set(x - pad, base + newsPaint.ascent() - pad * 0.5f, x + tagW + gap + newsPaint.measureText(newsFit) + pad,
+                base + newsPaint.descent() + pad * 0.5f);
+        typedPanel.setColor(Ui.alpha(0xFF050807, 0.66f * alpha));
+        c.drawRoundRect(newsBox, 16 * k, 16 * k, typedPanel);
+        newsTag.setAlpha(Math.round(255 * alpha));
+        newsPaint.setAlpha(Math.round(235 * alpha));
+        c.drawText("NEWS", x, base, newsTag);
+        c.drawText(newsFit, x + tagW + gap, base, newsPaint);
     }
 
     /** Roast Mode's typed message, top left: up to three lines with a blinking block cursor, over a soft shadow. */
