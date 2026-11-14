@@ -36,6 +36,8 @@ final class Possessed {
     private boolean cursor, first;
     private boolean pinned;   // a reply from Talk: kept on screen longer, and not replaced when the screen comes back
     private Runnable whenTyped;   // say(text, then): runs once the last character is typed
+    private boolean following;   // sayFollowing: the voice reports each word (reveal), the typing keeps up with it
+    private long followSince;
     private long holdUntil;
 
     private static String[] lines;
@@ -69,6 +71,7 @@ final class Possessed {
 
     /** The same, then runs `then` once the last character is on screen (the joke's fake crash). */
     void say(String said, Runnable then) {
+        following = false;
         whenTyped = then;
         handler.removeCallbacks(step);
         text = said;
@@ -80,10 +83,50 @@ final class Possessed {
         handler.postDelayed(step, 150);
     }
 
+    /**
+     * The same, but each word appears as the voice says it (reveal, from the text-to-speech's word ranges). If the voice
+     * reports no word within 1.8 s, it types as usual.
+     */
+    void sayFollowing(String said, Runnable then) {
+        say(said, then);
+        following = true;
+        followSince = SystemClock.uptimeMillis();
+    }
+
+    /** The voice reached the word ending at `end` (an index in the text): everything up to it shows. */
+    void reveal(int end) {
+        if (!following || phase != TYPING) return;
+        int n = Math.min(text.length(), Math.max(shown, end));
+        if (n == shown) return;
+        shown = n;
+        cursor = true;
+        if (shown >= text.length()) typedAll(SystemClock.uptimeMillis());
+        if (changed != null) changed.run();
+    }
+
+    /** The voice finished (or failed): the rest shows at once. */
+    void voiceDone() {
+        if (following && phase == TYPING) reveal(text.length());
+    }
+
+    /** The last character is on screen: hold it (longer for Talk's replies), then run what waited for it. */
+    private void typedAll(long up) {
+        shown = text.length();
+        following = false;
+        if (whenTyped != null) {
+            Runnable then = whenTyped;
+            whenTyped = null;
+            handler.postDelayed(then, 500);
+        }
+        phase = HOLD;
+        holdUntil = up + 3500 + 45L * text.length() + (pinned ? 9000 : 0);
+    }
+
     /** Nothing typed until the next say() (the screen is busy pretending to crash). */
     void clear() {
         handler.removeCallbacks(step);
         whenTyped = null;
+        following = false;
         text = "";
         shown = 0;
         pinned = false;
@@ -119,17 +162,18 @@ final class Possessed {
             long delay;
             switch (phase) {
                 case TYPING:
+                    if (following) {
+                        if (shown > 0 || up - followSince < 1800) {   // waiting for the voice's next word
+                            cursor = true;
+                            delay = 120;
+                            break;
+                        }
+                        following = false;   // the voice reports no words: type as usual
+                    }
                     shown++;
                     cursor = true;
                     if (shown >= text.length()) {
-                        shown = text.length();
-                        if (whenTyped != null) {
-                            Runnable then = whenTyped;
-                            whenTyped = null;
-                            handler.postDelayed(then, 500);
-                        }
-                        phase = HOLD;
-                        holdUntil = up + 3500 + 45L * text.length() + (pinned ? 9000 : 0);
+                        typedAll(up);
                         delay = 530;
                     } else {
                         delay = pace(text.charAt(shown - 1));

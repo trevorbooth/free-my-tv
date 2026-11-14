@@ -11,8 +11,8 @@ import java.util.Random;
 
 /**
  * The punchline of Talk's joke: after "This TV will self destruct in 5. 4. 3. 2. 1.", the home screen pretends to
- * crash. A glitch (the layers underneath shake, torn colour bars, flicker), then a black terminal screen that types
- * out a fake fatal error and a "rebooting personality core" bar, then it fades back. Nothing actually crashes: it's
+ * crash, as plausibly as it can. A glitch (the layers underneath shake, torn colour bars, flicker), then a black screen
+ * that prints a system-style crash dump in plain grey and "Restarting", then it fades back. Nothing actually crashes: it's
  * one full-screen view on top, drawn only while it runs. Any key skips to the end (HomeView).
  */
 final class FakeCrash extends View {
@@ -24,20 +24,25 @@ final class FakeCrash extends View {
         void crashDone();
     }
 
-    private static final long GLITCH_MS = 1500, SCREEN_MS = 5600, FADE_MS = 600;
-    private static final int CHAR_MS = 9;   // the error types fast, so the reboot bar has ~2 s to fill
+    private static final long GLITCH_MS = 3000, SCREEN_MS = 5600, FADE_MS = 600;
+    private static final int CHAR_MS = 6;   // printed like a log: fast, a pause at each line end
+    /** A crash dump with nothing funny in it; the dump file's name carries the real date and time (lines()). */
     private static final String[] LINES = {
-        "*** FATAL EXCEPTION IN TV PERSONALITY CORE ***",
+        "FATAL EXCEPTION: RenderThread",
+        "Process: io.freemytv:home, PID: 9132",
+        "java.lang.IllegalStateException: GPU context lost (EGL_CONTEXT_LOST)",
+        "    at android.view.ThreadedRenderer.nSyncAndDrawFrame(Native Method)",
+        "    at android.view.ThreadedRenderer.draw(ThreadedRenderer.java:832)",
+        "    at android.view.ViewRootImpl.performDraw(ViewRootImpl.java:4721)",
+        "    at io.freemytv.HomeView.onDraw(HomeView.java:4977)",
+        "    at android.os.Looper.loop(Looper.java:288)",
         "",
-        "process: humor.service (pid 5432)",
-        "reason: self destruct sequence completed. TV did not.",
-        "error 0x5E1F: sarcasm buffer overflow",
+        "watchdog: system_server not responding (30012 ms)",
+        "%DUMP%",
         "",
-        "dumping memory to /dev/couch ........ done",
-        "notifying the robot colony .......... done",
-        "",
-        "rebooting personality core",
+        "Restarting",
     };
+    private String[] lines = LINES;
 
     private final Host host;
     private final Random random = new Random();
@@ -60,6 +65,11 @@ final class FakeCrash extends View {
     }
 
     void start() {
+        String stamp = new java.text.SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", java.util.Locale.US).format(new java.util.Date());
+        lines = LINES.clone();
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].equals("%DUMP%")) lines[i] = "dumping state to /data/anr/anr_" + stamp + " ... done";
+        }
         startedAt = SystemClock.uptimeMillis();
         running = true;
         setVisibility(VISIBLE);
@@ -122,33 +132,28 @@ final class FakeCrash extends View {
         for (float y = 0; y < h; y += 4 * k) c.drawRect(0, y, w, y + k, fill);
     }
 
-    /** The fake fatal error, typed fast, then the reboot bar filling up. */
+    /** The crash dump, printed fast like a log, then "Restarting" with dots, in plain grey on black. */
     private void screen(Canvas c, int w, int h, float k, long t, float alpha) {
         fill.setColor(Ui.alpha(0xFF000000, alpha));
         c.drawRect(0, 0, w, h, fill);
-        mono.setTextSize(32 * k);
-        alarm.setTextSize(32 * k);
-        mono.setColor(Ui.alpha(0xFF5CFF9D, alpha));
-        alarm.setColor(Ui.alpha(0xFFFF6961, alpha));
-        float x = 140 * k, y = 220 * k, line = 50 * k;
+        mono.setTextSize(26 * k);
+        alarm.setTextSize(26 * k);
+        mono.setColor(Ui.alpha(0xFFB8B8B8, alpha));
+        alarm.setColor(Ui.alpha(0xFFFFFFFF, alpha));
+        float x = 110 * k, y = 170 * k, line = 40 * k;
         int chars = (int) (t / CHAR_MS);
-        for (int i = 0; i < LINES.length && chars > 0; i++) {
-            String s = LINES[i];
+        for (int i = 0; i < lines.length && chars > 0; i++) {
+            String s = lines[i];
             int n = Math.min(chars, s.length());
-            c.drawText(s, 0, n, x, y, i == 0 ? alarm : mono);
-            chars -= s.length() + 8;   // a short pause at each line end
+            if (i == lines.length - 1 && n == s.length()) {
+                // "Restarting" and its dots, one more every 400 ms
+                int dots = (int) ((t / 400) % 4);
+                c.drawText(s + "....".substring(0, dots), x, y, mono);
+            } else {
+                c.drawText(s, 0, n, x, y, i == 0 ? alarm : mono);
+            }
+            chars -= s.length() + 12;   // a short pause at each line end
             y += line;
         }
-        if (chars <= 0) return;
-        // The reboot bar: [##########----------] 52%
-        long typedAt = 0;
-        for (String s : LINES) typedAt += (s.length() + 8) * (long) CHAR_MS;
-        float p = Math.min(1, Math.max(0, (t - typedAt) / (float) Math.max(1, SCREEN_MS - typedAt - 300)));
-        int cells = 30, on = Math.round(cells * p);
-        StringBuilder bar = new StringBuilder("[");
-        for (int i = 0; i < cells; i++) bar.append(i < on ? '#' : '-');
-        bar.append("] ").append(Math.round(p * 100)).append('%');
-        c.drawText(bar.toString(), x, y, mono);
-        if (p >= 1 && (t / 400) % 2 == 0) c.drawText("_", x, y + line, mono);
     }
 }

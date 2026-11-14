@@ -4886,6 +4886,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             else voice.setLanguage(java.util.Locale.US);
             voice.setPitch(0.72f);
             voice.setSpeechRate(0.82f);   // slow and deliberate, like the TARS-inspired pyttsx3 setup (150 of ~200 wpm)
+            // Each word as it's spoken: the typing follows the voice (Possessed.sayFollowing).
+            voice.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
+                @Override public void onStart(String id) {}
+                @Override public void onDone(String id) { post(possessed::voiceDone); }
+                @Override public void onError(String id) { post(possessed::voiceDone); }
+                @Override public void onStop(String id, boolean interrupted) { post(possessed::voiceDone); }
+                @Override public void onRangeStart(String id, int start, int end, int frame) {
+                    post(() -> possessed.reveal(end));
+                }
+            });
             voiceReady = true;
             AppLog.w("talk: speaking with " + (pick != null ? pick.getName() : "the default voice"));
             if (voicePending != null) {
@@ -4893,6 +4903,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 voicePending = null;
             }
         }));
+    }
+
+    /** Typed and spoken together: with the voice ready, each word types as it's said; otherwise typed, then spoken. */
+    private void talkOut(String text, Runnable then) {
+        if (voice != null && voiceReady) {
+            possessed.sayFollowing(text, then);
+            voice.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "talk");
+        } else {
+            possessed.say(text, then);
+            speak(text);
+        }
     }
 
     private void speak(String text) {
@@ -4983,16 +5004,14 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         AppLog.w("talk: asked (" + said.length() + " chars)");
         prepareVoice();
         if (Talk.isJoke(said)) {   // the countdown, then the fake crash
-            possessed.say(Talk.COUNTDOWN, this::selfDestruct);
-            speak(Talk.COUNTDOWN);
+            talkOut(Talk.COUNTDOWN, this::selfDestruct);
             return;
         }
         possessed.say("...");
         Talk.ask(said.trim(), talkContext(), answer -> post(() -> {
             String reply = answer != null ? answer
                     : "My brain lives on a computer that isn't answering. Wake it up. I'll wait. I'm good at waiting.";
-            possessed.say(reply);
-            speak(reply);   // out loud as it types
+            talkOut(reply, null);   // out loud, the words typed as they're said
         }));
     }
 
@@ -5013,7 +5032,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /** Back from the fake crash. */
     private void rebooted() {
         shake(0, 0);
-        if (running) possessed.say("Reboot complete. You flinched.");
+        if (running) talkOut("Reboot complete. You flinched.", null);
     }
 
     /** The time, the city and the weather on screen, for Talk. */
