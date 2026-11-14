@@ -749,6 +749,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (!running) return;
         running = false;
         possessed.stop();
+        if (recognizer != null) recognizer.cancel();
         handler.removeCallbacks(bgFollow);
         cancelReorder(true);
         if (recents != null) recents.closeNow();
@@ -4828,16 +4829,70 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return Recs.hasKey(getContext());
     }
 
-    static final int REQUEST_TALK = 7301;
+    static final int REQUEST_TALK = 7301, REQUEST_MIC = 7302;
+    private android.speech.SpeechRecognizer recognizer;
 
-    /** "Talk to the TV": the TV's own voice input (Google's, through the remote's mic) turns speech into text. */
+    /**
+     * "Talk to the TV": the TV's own speech recognizer (Google TV's voice search, through the remote's mic) turns what
+     * you say into text, right here: "Listening." types out while it listens. The first time, Android asks to allow
+     * the microphone. Without a recognizer, Google's voice input screen instead (listenWithScreen).
+     */
     void listen() {
         if (!Talk.available()) return;
+        if (activity.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            activity.requestPermissions(new String[] {android.Manifest.permission.RECORD_AUDIO}, REQUEST_MIC);
+            return;
+        }
+        if (!android.speech.SpeechRecognizer.isRecognitionAvailable(getContext())) {
+            listenWithScreen();
+            return;
+        }
+        if (recognizer == null) {
+            recognizer = android.speech.SpeechRecognizer.createSpeechRecognizer(getContext());
+            recognizer.setRecognitionListener(new android.speech.RecognitionListener() {
+                @Override public void onReadyForSpeech(android.os.Bundle b) { possessed.say("Listening."); }
+                @Override public void onBeginningOfSpeech() {}
+                @Override public void onRmsChanged(float db) {}
+                @Override public void onBufferReceived(byte[] buffer) {}
+                @Override public void onEndOfSpeech() {}
+                @Override public void onPartialResults(android.os.Bundle b) {}
+                @Override public void onEvent(int type, android.os.Bundle b) {}
+                @Override public void onError(int error) {
+                    AppLog.w("talk: recognizer error " + error);
+                    possessed.say(error == android.speech.SpeechRecognizer.ERROR_NO_MATCH
+                            || error == android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                            ? "I didn't catch that. Speak up, human. I'm listening. I'm always listening."
+                            : "My ears glitched. Press the button and try again.");
+                }
+                @Override public void onResults(android.os.Bundle b) {
+                    java.util.ArrayList<String> said = b == null ? null
+                            : b.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION);
+                    AppLog.w("talk: heard " + (said == null ? "nothing" : said.size() + " result(s)"));
+                    if (said != null && !said.isEmpty()) ask(said.get(0));
+                }
+            });
+        }
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_CALLING_PACKAGE, getContext().getPackageName());
+        recognizer.cancel();
+        recognizer.startListening(i);
+    }
+
+    /** Android said yes or no to the microphone (HomeActivity). */
+    void micAnswered(boolean granted) {
+        if (granted) listen();
+        else possessed.say("No microphone. Fine. I'll keep reading lips through the camera.");
+    }
+
+    /** The fallback: Google's voice input screen, which hands back what it heard (HomeActivity.onActivityResult). */
+    private void listenWithScreen() {
         Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Talk to the TV")
                 .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-        // Google TV's own voice search, straight away: Google's speech services answer this too, behind a chooser.
         Intent tv = new Intent(i).setPackage("com.google.android.katniss");
         if (!getContext().getPackageManager().queryIntentActivities(tv, 0).isEmpty()) i = tv;
         try {

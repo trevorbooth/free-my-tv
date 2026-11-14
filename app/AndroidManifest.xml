@@ -5,6 +5,8 @@
     android:versionName="1.5">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- "Talk to the TV" (Talk): only while you hold the conversation, through the TV's speech recognizer. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- After the TV boots (and after a TV update), checks that Free My TV mode is still as you left it. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -28,6 +30,11 @@
          returns null). The shelf and streaming apps, the live TV apps and, through the <intent>, every TV app
          (for "All Apps"). -->
     <queries>
+        <!-- Talk: the TV's speech recognizer (Google TV's voice search provides it). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <package android:name="com.google.android.katniss" />
         <!-- Optional App Store top button: Google Play or Amazon Appstore. -->
         <package android:name="com.android.vending" />
         <package android:name="com.amazon.venezia" />

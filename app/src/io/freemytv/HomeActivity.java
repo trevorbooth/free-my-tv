@@ -140,8 +140,18 @@ public class HomeActivity extends Activity {
         return false;
     }
 
+    @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request != HomeView.REQUEST_MIC || home == null) return;
+        home.micAnswered(results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
+    }
+
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == HomeView.REQUEST_TALK) {
+            AppLog.w("talk: voice screen returned " + result + (data == null || data.getExtras() == null ? ", no data"
+                    : ", " + data.getExtras().keySet()));
+        }
         if (request != HomeView.REQUEST_TALK || home == null || result != RESULT_OK || data == null) return;
         java.util.ArrayList<String> said = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
         if (said != null && !said.isEmpty()) home.ask(said.get(0));
