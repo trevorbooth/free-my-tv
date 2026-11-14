@@ -63,10 +63,6 @@ final class Talk {
             } catch (Exception e) {
                 AppLog.w("talk: " + e.getClass().getSimpleName() + " " + e.getMessage());
             }
-            // Asked for a joke: every one starts with the self-destruct countdown.
-            if (JOKE.matcher(said).find()) {
-                answer = COUNTDOWN + (answer != null ? shorter(answer, 150) : "Nothing happened. Humans fall for that every time.");
-            }
             reply.done(answer);
         });
     }
@@ -138,13 +134,12 @@ final class Talk {
     };
 
     private static final java.util.regex.Pattern JOKE = java.util.regex.Pattern.compile("(?i)\\bjokes?\\b");
-    private static final String COUNTDOWN = "This TV will self destruct in 5. 4. 3. 2. 1. ";
+    /** The joke: this countdown, then the home screen fakes a crash (FakeCrash). No model, no second joke. */
+    static final String COUNTDOWN = "This TV will self destruct in 5. 4. 3. 2. 1.";
 
-    /** `s` cut at a sentence end to at most `max` characters (the countdown takes the rest of the typed area). */
-    private static String shorter(String s, int max) {
-        if (s.length() <= max) return s;
-        int cut = Math.max(s.lastIndexOf(". ", max), Math.max(s.lastIndexOf("? ", max), s.lastIndexOf("! ", max)));
-        return cut > 30 ? s.substring(0, cut + 1) : s.substring(0, max - 3).trim() + "...";
+    /** Asked for a joke (and not something with a fixed answer). */
+    static boolean isJoke(String said) {
+        return said != null && fixed(said) == null && JOKE.matcher(said).find();
     }
 
     /** The answer to a question that has a fixed one, or null for the model. */

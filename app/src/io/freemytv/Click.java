@@ -24,6 +24,7 @@ final class Click {
     private static final int RATE = 48_000;
     private volatile SoundPool pool;
     private int[] move = new int[0], open = new int[0];
+    private int crash;
     private final java.util.Random random = new java.util.Random();
     /** {start Hz, end Hz, seconds} of each pew: short ones for moving, longer and lower ones for opening. */
     private static final float[][] MOVES = {
@@ -41,6 +42,7 @@ final class Click {
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build();
             move = new int[MOVES.length];
             for (int i = 0; i < MOVES.length; i++) move[i] = pool.load(pew(c, "pew-move-" + i + ".wav", MOVES[i], i), 1);
+            crash = pool.load(staticBurst(c), 1);
             open = new int[OPENS.length];
             for (int i = 0; i < OPENS.length; i++) open[i] = pool.load(pew(c, "pew-open-" + i + ".wav", OPENS[i], 10 + i), 1);
         } catch (IOException | RuntimeException e) {
@@ -65,11 +67,50 @@ final class Click {
         });
     }
 
+    /** The fake crash's burst of static (FakeCrash). */
+    void crash() {
+        if (pool == null || !Prefs.sounds()) return;
+        handler.post(() -> {
+            SoundPool p = pool;
+            if (p != null) p.play(crash, 0.4f, 0.4f, 1, 0, 1f);
+        });
+    }
+
     void release() {
         SoundPool p = pool;
         pool = null;
         if (p != null) handler.post(p::release);   // after the plays already queued, never during one
         thread.quitSafely();
+    }
+
+    /** 1.4 s of crackling static with a low electrical buzz under it, cut into stutters, fading out. */
+    private static String staticBurst(Context c) throws IOException {
+        File f = new File(c.getCacheDir(), "crash-static.wav");
+        if (f.exists() && f.length() > 44) return f.getPath();
+        int n = Math.round(RATE * 1.4f);
+        ByteBuffer b = ByteBuffer.allocate(44 + n * 2).order(ByteOrder.LITTLE_ENDIAN);
+        b.put("RIFF".getBytes("US-ASCII")).putInt(36 + n * 2).put("WAVE".getBytes("US-ASCII"));
+        b.put("fmt ".getBytes("US-ASCII")).putInt(16).putShort((short) 1).putShort((short) 1)
+                .putInt(RATE).putInt(RATE * 2).putShort((short) 2).putShort((short) 16);
+        b.put("data".getBytes("US-ASCII")).putInt(n * 2);
+        java.util.Random r = new java.util.Random(7);
+        boolean on = true;
+        int next = 0;
+        for (int i = 0; i < n; i++) {
+            if (i >= next) {   // stutter: bursts of 20 to 120 ms, some silent
+                on = r.nextFloat() < 0.75f;
+                next = i + RATE / 50 + r.nextInt(RATE / 10);
+            }
+            double t = (double) i / RATE;
+            double buzz = Math.signum(Math.sin(2 * Math.PI * 60 * t)) * 0.25;
+            double s = on ? (r.nextDouble() * 2 - 1) * 0.7 + buzz : buzz * 0.3;
+            double env = Math.min(1, t / 0.01) * Math.max(0, 1 - t / 1.4);
+            b.putShort((short) Math.round(Math.max(-1, Math.min(1, s * env * 0.6)) * Short.MAX_VALUE));
+        }
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(b.array());
+        }
+        return f.getPath();
     }
 
     /**

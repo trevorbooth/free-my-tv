@@ -135,6 +135,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Activity activity;
     private final Scene scene = new Scene();
     private final Possessed possessed = new Possessed();   // Roast Mode: the TV types to you
+    private FakeCrash crash;   // Talk's joke: the home screen pretends to crash
     private Possessed.Wrapped typedLines;
     private Paint typedLabel;
     private int shelfCols;                // apps per row with the shelf in two rows; 0 = one row
@@ -645,6 +646,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         toastLayer = new Layer(a, TOAST);
         menuLayer = new Layer(a, MENU);
         recentLayer = new Layer(a, RECENT);
+        crash = new FakeCrash(a, new FakeCrash.Host() {
+            @Override public void jitter(float dx, float dy) { shake(dx, dy); }
+            @Override public void crashDone() { rebooted(); }
+        });
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
         // Not on Android 8 to 11: on older GPUs (a Mi Box 3's Mali-450) redrawing and compositing a big layer on every
         // frame cost more than drawing straight to the screen (measured: focus on the picks 33 → 12 ms a frame, the
@@ -654,6 +659,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             v.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);   // TalkBack reads the items (Spoken)
             addView(v);
         }
+        crash.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        addView(crash);   // on top of everything
         setContentDescription("Free My TV");
         recentLayer.setVisibility(INVISIBLE);
         drawerLayer.setVisibility(INVISIBLE);
@@ -752,6 +759,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         possessed.stop();
         if (recognizer != null) recognizer.cancel();
         if (voice != null) voice.stop();
+        if (crash.running()) {
+            crash.stop();
+            rebooted();
+        }
         handler.removeCallbacks(bgFollow);
         cancelReorder(true);
         if (recents != null) recents.closeNow();
@@ -895,6 +906,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         sheetLayer.setPivotY(height / 2f);
         place(toastLayer, 0, 0);
         recentLayer.layout(0, 0, width, height);
+        crash.layout(0, 0, width, height);
     }
 
     private static void place(View v, int x, int y) {
@@ -3170,6 +3182,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     boolean onKey(KeyEvent e) {
         wake();
+        if (crash.running()) {   // any key during the fake crash: skip to the end
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) crash.skip();
+            return true;
+        }
         if (menuOpen) return menuKey(e);
         boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
         if (recents != null && recents.isOpen()) {   // not as it fades out: an OK or ▲ then is the home screen's, not a card's
@@ -4966,6 +4982,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (said == null || said.trim().isEmpty() || !Talk.available()) return;
         AppLog.w("talk: asked (" + said.length() + " chars)");
         prepareVoice();
+        if (Talk.isJoke(said)) {   // the countdown, then the fake crash
+            possessed.say(Talk.COUNTDOWN, this::selfDestruct);
+            speak(Talk.COUNTDOWN);
+            return;
+        }
         possessed.say("...");
         Talk.ask(said.trim(), talkContext(), answer -> post(() -> {
             String reply = answer != null ? answer
@@ -4973,6 +4994,26 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             possessed.say(reply);
             speak(reply);   // out loud as it types
         }));
+    }
+
+    /** The countdown reached 1: static, glitch, a fake fatal error, a reboot bar (FakeCrash). */
+    private void selfDestruct() {
+        if (!running) return;
+        if (voice != null) voice.stop();
+        possessed.clear();
+        click.crash();
+        crash.start();
+    }
+
+    /** Shakes the home screen's layers sideways (FakeCrash's glitch); translationY stays the drawer's (show()). */
+    private void shake(float dx, float dy) {
+        for (View v : new View[] {sky, heroLayer, status, platter, tiles}) v.setTranslationX(dx);
+    }
+
+    /** Back from the fake crash. */
+    private void rebooted() {
+        shake(0, 0);
+        if (running) possessed.say("Reboot complete. You flinched.");
     }
 
     /** The time, the city and the weather on screen, for Talk. */

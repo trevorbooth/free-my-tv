@@ -35,6 +35,7 @@ final class Possessed {
     private int shown, phase;
     private boolean cursor, first;
     private boolean pinned;   // a reply from Talk: kept on screen longer, and not replaced when the screen comes back
+    private Runnable whenTyped;   // say(text, then): runs once the last character is typed
     private long holdUntil;
 
     private static String[] lines;
@@ -63,6 +64,12 @@ final class Possessed {
 
     /** Types `said` right away, in place of whatever was showing, and holds it longer (Talk's replies). */
     void say(String said) {
+        say(said, null);
+    }
+
+    /** The same, then runs `then` once the last character is on screen (the joke's fake crash). */
+    void say(String said, Runnable then) {
+        whenTyped = then;
         handler.removeCallbacks(step);
         text = said;
         shown = 0;
@@ -71,6 +78,16 @@ final class Possessed {
         pinned = true;
         if (changed != null) changed.run();
         handler.postDelayed(step, 150);
+    }
+
+    /** Nothing typed until the next say() (the screen is busy pretending to crash). */
+    void clear() {
+        handler.removeCallbacks(step);
+        whenTyped = null;
+        text = "";
+        shown = 0;
+        pinned = false;
+        if (changed != null) changed.run();
     }
 
     String text() {
@@ -106,6 +123,11 @@ final class Possessed {
                     cursor = true;
                     if (shown >= text.length()) {
                         shown = text.length();
+                        if (whenTyped != null) {
+                            Runnable then = whenTyped;
+                            whenTyped = null;
+                            handler.postDelayed(then, 500);
+                        }
                         phase = HOLD;
                         holdUntil = up + 3500 + 45L * text.length() + (pinned ? 9000 : 0);
                         delay = 530;
