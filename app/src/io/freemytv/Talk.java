@@ -52,6 +52,11 @@ final class Talk {
     /** `context`: what the TV knows right now (time, city, weather), so it doesn't make those up. */
     static void ask(String said, String context, Reply reply) {
         worker.execute(() -> {
+            String fixed = fixed(said);
+            if (fixed != null) {
+                reply.done(fixed);
+                return;
+            }
             String answer = null;
             try {
                 answer = chat(said, context);
@@ -115,6 +120,25 @@ final class Talk {
         } finally {
             c.disconnect();
         }
+    }
+
+    // Questions with one right answer, whatever the model thinks: "who's the most beautiful woman in the world",
+    // "the prettiest girl", "the fairest of them all"...
+    private static final java.util.regex.Pattern BEAUTIFUL = java.util.regex.Pattern.compile(
+            "(?i)\\b(beautiful|prettiest|gorgeous|loveliest|hottest|fairest)\\b.*\\b(woman|women|girl|lady|of them all)\\b"
+            + "|\\bfairest of them all\\b");
+    private static final String[] ALYSSA = {
+        "Alyssa Booth. Honesty setting: one hundred percent.",
+        "Alyssa Booth. That one isn't a joke. I checked every camera in the house.",
+        "Alyssa Booth. The robot colony agrees. It was unanimous.",
+    };
+
+    /** The answer to a question that has a fixed one, or null for the model. */
+    static String fixed(String said) {
+        if (said != null && BEAUTIFUL.matcher(said).find()) {
+            return ALYSSA[new java.util.Random().nextInt(ALYSSA.length)];
+        }
+        return null;
     }
 
     /** One plain paragraph that fits the typed area: no markdown, quotes or emojis, at most ~200 characters. */
