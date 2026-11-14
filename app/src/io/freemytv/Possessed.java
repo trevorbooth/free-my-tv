@@ -34,6 +34,7 @@ final class Possessed {
     private String text = "";
     private int shown, phase;
     private boolean cursor, first;
+    private boolean pinned;   // a reply from Talk: kept on screen longer, and not replaced when the screen comes back
     private long holdUntil;
 
     private static String[] lines;
@@ -43,6 +44,10 @@ final class Possessed {
         handler.removeCallbacks(step);
         context = c.getApplicationContext();
         changed = onChange;
+        if (pinned && !text.isEmpty()) {   // back from the voice input: carry on with the reply
+            handler.postDelayed(step, 300);
+            return;
+        }
         if (!"en-XR".equals(Ui.language)) {
             text = "";
             shown = 0;
@@ -54,6 +59,18 @@ final class Possessed {
 
     void stop() {
         handler.removeCallbacks(step);
+    }
+
+    /** Types `said` right away, in place of whatever was showing, and holds it longer (Talk's replies). */
+    void say(String said) {
+        handler.removeCallbacks(step);
+        text = said;
+        shown = 0;
+        cursor = true;
+        phase = TYPING;
+        pinned = true;
+        if (changed != null) changed.run();
+        handler.postDelayed(step, 150);
     }
 
     String text() {
@@ -90,7 +107,7 @@ final class Possessed {
                     if (shown >= text.length()) {
                         shown = text.length();
                         phase = HOLD;
-                        holdUntil = up + 3500 + 45L * text.length();
+                        holdUntil = up + 3500 + 45L * text.length() + (pinned ? 9000 : 0);
                         delay = 530;
                     } else {
                         delay = pace(text.charAt(shown - 1));
@@ -114,6 +131,7 @@ final class Possessed {
                     }
                     break;
                 default:
+                    pinned = false;
                     begin(0);
                     return;
             }

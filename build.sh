@@ -97,6 +97,7 @@ lan_server() {   # lan_server <key>: checks it; the host of an http:// one joins
 }
 lan_server immich_server
 lan_server home_assistant_url
+lan_server ollama_url
 # Keys that would let another app on the TV into the user's own servers stay out of the APK: tools/send_key.py sends
 # them to the TV (Secrets).
 for key in immich_api_key home_assistant_token; do
@@ -136,6 +137,8 @@ final class Config {
     static final boolean HOME_ASSISTANT = $HA;   // home_assistant_url and _entities set: Home Settings shows its row
     static final boolean DISABLE_ASSISTANT = $ASSIST;
     static final boolean SHOW_CRYPTO = $CRYPTO;
+    static final String OLLAMA_URL = "$(prop ollama_url '')";   // Talk: an Ollama server on your network
+    static final String OLLAMA_MODEL = "$(prop ollama_model gemma3:4b)";
     static final String NEWS_FEED = "$(prop news_feed https://feeds.npr.org/1001/rss.xml)";   // headlines where crypto was (https RSS/Atom)
     static final boolean HIDE_ANIMATION = $ANIMATION;
     static final boolean SCREENSAVER = $SAVER;   // false: the TV keeps its own

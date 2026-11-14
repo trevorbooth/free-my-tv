@@ -54,6 +54,7 @@ public class HomeActivity extends Activity {
         getWindow().setBackgroundDrawable(null);
         if (wantsAllApps(getIntent())) home.showAllApps();
         else if (getIntent().getBooleanExtra(EXTRA_INPUTS, false)) home.showInputs();
+        talkExtras(getIntent());
         // At power-on "Live TV" (#346): the first time the home screen comes up after a full start, in Free My TV mode.
         if (HomeMode.noteHomeShown(this) && SystemClock.elapsedRealtime() < 240_000 && "live".equals(Prefs.powerOn())) {
             org.json.JSONObject s = HomeMode.state(this);
@@ -121,6 +122,31 @@ public class HomeActivity extends Activity {
         super.onPause();
     }
 
+    /**
+     * For testing Talk from a computer: `am start -n io.freemytv/.HomeActivity --es ask "hello"` asks without speaking,
+     * `--ez talk true` opens the voice input. True when one of them was there.
+     */
+    private boolean talkExtras(Intent intent) {
+        if (home == null || intent == null) return false;
+        String ask = intent.getStringExtra("ask");
+        if (ask != null) {
+            home.ask(ask);
+            return true;
+        }
+        if (intent.getBooleanExtra("talk", false)) {
+            home.listen();
+            return true;
+        }
+        return false;
+    }
+
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != HomeView.REQUEST_TALK || home == null || result != RESULT_OK || data == null) return;
+        java.util.ArrayList<String> said = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+        if (said != null && !said.isEmpty()) home.ask(said.get(0));
+    }
+
     /** Home button pressed on the home screen: back to the entry state (focus on the first app, sheet closed). */
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -137,6 +163,7 @@ public class HomeActivity extends Activity {
             home.showInputs();
             return;
         }
+        if (talkExtras(intent)) return;
         long now = SystemClock.uptimeMillis();
         boolean twice = Prefs.recents().equals("home") && lastHome != 0 && now - lastHome < TWICE_MS;
         lastHome = twice ? 0 : now;

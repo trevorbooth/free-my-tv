@@ -552,7 +552,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             typedLabel.setLetterSpacing(0.14f);
             typedLines = null;
         }
-        if (typedLines == null || !typedLines.text.equals(text)) typedLines = Possessed.wrap(text, typedPaint, 1050 * k, 3);
+        if (typedLines == null || !typedLines.text.equals(text)) typedLines = Possessed.wrap(text, typedPaint, 1050 * k, 4);
         // A dark terminal panel behind it, sized to the whole message (it doesn't grow as it types), so it reads over
         // a bright, busy photo.
         // The "TV'S THOUGHTS" heading on top, inside the panel.

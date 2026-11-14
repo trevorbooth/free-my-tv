@@ -3472,6 +3472,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             openRecents();
             return;
         }
+        if (it.kind == HomeApps.TALK) {
+            listen();
+            return;
+        }
         if (it.kind == HomeApps.HOME_ASSISTANT) {
             pressHome(it);
             return;
@@ -4824,6 +4828,53 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return Recs.hasKey(getContext());
     }
 
+    static final int REQUEST_TALK = 7301;
+
+    /** "Talk to the TV": the TV's own voice input (Google's, through the remote's mic) turns speech into text. */
+    void listen() {
+        if (!Talk.available()) return;
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Talk to the TV")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        // Google TV's own voice search, straight away: Google's speech services answer this too, behind a chooser.
+        Intent tv = new Intent(i).setPackage("com.google.android.katniss");
+        if (!getContext().getPackageManager().queryIntentActivities(tv, 0).isEmpty()) i = tv;
+        try {
+            activity.startActivityForResult(i, REQUEST_TALK);
+        } catch (android.content.ActivityNotFoundException | SecurityException e) {
+            AppLog.w("talk: no voice input: " + e.getMessage());
+            possessed.say("I'd love to hear you, but this TV has no voice input. Rude.");
+        }
+    }
+
+    /** What was said (voice input, or `adb ... --es ask` for testing): the TV thinks, then types its answer. */
+    void ask(String said) {
+        if (said == null || said.trim().isEmpty() || !Talk.available()) return;
+        AppLog.w("talk: asked (" + said.length() + " chars)");
+        possessed.say("...");
+        Talk.ask(said.trim(), talkContext(), answer -> post(() -> possessed.say(answer != null ? answer
+                : "My brain lives on a computer that isn't answering. Wake it up. I'll wait. I'm good at waiting.")));
+    }
+
+    /** The time, the city and the weather on screen, for Talk. */
+    private String talkContext() {
+        StringBuilder sb = new StringBuilder();
+        long now = System.currentTimeMillis();
+        sb.append("It is ").append(new java.text.SimpleDateFormat("EEEE, MMMM d, h:mm a", java.util.Locale.US)
+                .format(new java.util.Date(now))).append('.');
+        String city = Config.CITY.trim();
+        if (!city.isEmpty()) sb.append(" The TV is in ").append(city).append('.');
+        HomeData.Weather wx = data.weather;
+        if (!Double.isNaN(wx.temp)) {
+            sb.append(" Weather now: ").append(HomeData.degrees(wx.temp)).append(", ")
+                    .append(HomeData.condition(wx.code, wx.isDay)).append("; today ").append(HomeData.highLow(wx, ", ")).append('.');
+        }
+        String news = News.headline(now);
+        if (news != null) sb.append(" A headline on screen: ").append(news).append('.');
+        return sb.toString();
+    }
+
     /** The next character typed (or erased, or the cursor blinked): only the top layer draws again. */
     private void typed() {
         if (running) heroLayer.invalidate();
@@ -4834,7 +4885,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         String text = possessed.text();
         if (text.isEmpty()) return;
         if (typedLines == null || !typedLines.text.equals(text) || typedLines.paint != lGreet) {
-            typedLines = Possessed.wrap(text, lGreet, 1150 * k, 3);
+            typedLines = Possessed.wrap(text, lGreet, 1150 * k, 4);
         }
         float lineH = 52 * k, base = (L_DATE_BASE - 74) * k - (typedLines.lines.length - 1) * lineH;
         if (typedLabel == null || typedLabel.getTextSize() != 22 * k) {
