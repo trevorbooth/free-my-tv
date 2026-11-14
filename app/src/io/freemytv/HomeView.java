@@ -694,6 +694,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (running) return;
         running = true;
         possessed.start(getContext(), this::typed);
+        if (Talk.available()) prepareVoice();   // ready before the first reply
         News.refreshIfStale(newsReady);
         checkNight(false);
         boolean h24 = Ui.h24();
@@ -750,6 +751,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         running = false;
         possessed.stop();
         if (recognizer != null) recognizer.cancel();
+        if (voice != null) voice.stop();
         handler.removeCallbacks(bgFollow);
         cancelReorder(true);
         if (recents != null) recents.closeNow();
@@ -4831,6 +4833,61 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     static final int REQUEST_TALK = 7301, REQUEST_MIC = 7302;
     private android.speech.SpeechRecognizer recognizer;
+    private android.speech.tts.TextToSpeech voice;
+    private boolean voiceReady;
+    private String voicePending;   // a reply that came before the voice was ready
+    /** Talk's spoken voice, in order of preference: Google's low US English male voices (on the TV, no network). */
+    private static final String[] VOICES = {"en-us-x-iom-local", "en-us-x-tpd-local", "en-us-x-iol-local", "en-us-x-iom-network"};
+
+    /** The TV's text-to-speech, made the first time Talk is used: a low, slow, flat voice (pitch and rate below 1). */
+    private void prepareVoice() {
+        if (voice != null) return;
+        voice = new android.speech.tts.TextToSpeech(getContext().getApplicationContext(), status -> post(() -> {
+            if (status != android.speech.tts.TextToSpeech.SUCCESS || voice == null) {
+                AppLog.w("talk: no text-to-speech (" + status + ")");
+                return;
+            }
+            android.speech.tts.Voice pick = null;
+            java.util.Set<android.speech.tts.Voice> all = null;
+            try {
+                all = voice.getVoices();
+            } catch (RuntimeException e) {
+                AppLog.w("talk: voices: " + e.getMessage());
+            }
+            StringBuilder names = new StringBuilder();
+            if (all != null) {
+                for (android.speech.tts.Voice v : all) {
+                    if (v.getLocale() != null && "en".equals(v.getLocale().getLanguage()) && "US".equals(v.getLocale().getCountry())) {
+                        names.append(v.getName()).append(' ');
+                    }
+                }
+                for (String want : VOICES) {
+                    for (android.speech.tts.Voice v : all) if (pick == null && want.equals(v.getName())) pick = v;
+                }
+            }
+            AppLog.w("talk: US voices: " + names);
+            if (pick != null) voice.setVoice(pick);
+            else voice.setLanguage(java.util.Locale.US);
+            voice.setPitch(0.72f);
+            voice.setSpeechRate(0.82f);   // slow and deliberate, like the TARS-inspired pyttsx3 setup (150 of ~200 wpm)
+            voiceReady = true;
+            AppLog.w("talk: speaking with " + (pick != null ? pick.getName() : "the default voice"));
+            if (voicePending != null) {
+                speak(voicePending);
+                voicePending = null;
+            }
+        }));
+    }
+
+    private void speak(String text) {
+        if (text == null || text.isEmpty()) return;
+        if (voice == null || !voiceReady) {
+            voicePending = text;
+            prepareVoice();
+            return;
+        }
+        voice.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "talk");
+    }
 
     /**
      * "Talk to the TV": the TV's own speech recognizer (Google TV's voice search, through the remote's mic) turns what
@@ -4839,6 +4896,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      */
     void listen() {
         if (!Talk.available()) return;
+        prepareVoice();
         if (activity.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             activity.requestPermissions(new String[] {android.Manifest.permission.RECORD_AUDIO}, REQUEST_MIC);
@@ -4907,9 +4965,14 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void ask(String said) {
         if (said == null || said.trim().isEmpty() || !Talk.available()) return;
         AppLog.w("talk: asked (" + said.length() + " chars)");
+        prepareVoice();
         possessed.say("...");
-        Talk.ask(said.trim(), talkContext(), answer -> post(() -> possessed.say(answer != null ? answer
-                : "My brain lives on a computer that isn't answering. Wake it up. I'll wait. I'm good at waiting.")));
+        Talk.ask(said.trim(), talkContext(), answer -> post(() -> {
+            String reply = answer != null ? answer
+                    : "My brain lives on a computer that isn't answering. Wake it up. I'll wait. I'm good at waiting.";
+            possessed.say(reply);
+            speak(reply);   // out loud as it types
+        }));
     }
 
     /** The time, the city and the weather on screen, for Talk. */
