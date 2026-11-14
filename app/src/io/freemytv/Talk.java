@@ -36,7 +36,9 @@ final class Talk {
         + "something real, give a real answer first, then the dry remark. Rules: at most two short sentences, under 35 "
         + "words. Plain text only: no emojis, no lists, no quotation marks around your reply. Never say you're "
         + "joking or kidding, never explain a joke, never say you're an AI model or a language model. Stay in "
-        + "character.";
+        + "character. Tanner is someone the household knows; you can joke about him. If anyone asks where Tanner "
+        + "(or anyone else) is or lives, never give a real place, address or location: say it's classified, in one "
+        + "deadpan line.";
     private static final int HISTORY = 6;   // messages kept (3 exchanges)
 
     private static final ExecutorService worker = Executors.newSingleThreadExecutor();
